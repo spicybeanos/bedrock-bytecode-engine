@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::atomic::AtomicU64;
 
+#[derive(Clone, Copy)]
 pub enum InstrParam {
     Register(u8),
     Value(u64),
@@ -74,7 +75,6 @@ pub enum Instruction {
     Fgte(u8, InstrParam, InstrParam),
 
     // Control Flow
-    Label(u64),
     Jmp(u64),
     Jif(u8, u64),
     Jnif(u8, u64),
@@ -105,7 +105,7 @@ pub struct VM {
     pub vi_ram: HashMap<u64, Vec<u8>>, // Private memory
     pub label_indexs: HashMap<u64, usize>, // label hash to pc
     pub stack: Vec<u64>,      // Data stack
-    pub call_stack: Vec<u64>, // Return addresses
+    pub call_stack: Vec<usize>, // Return addresses
     pub global: Rc<RefCell<GlobalState>>,
 }
 
@@ -211,6 +211,15 @@ impl VM {
             Instruction::PwriteW(r, addr, k) => self.pwritew(*r, addr, k),
             Instruction::Pvlen(r, loc) => Ok(self.pvlen(*r, loc)),
             Instruction::Powner(r, loc) => self.powner(*r, loc),
+
+            //control flow
+            Instruction::Jmp(jmp_hash) => self.jmp(*jmp_hash),
+            Instruction::Jif(r, jmp_hash) => self.jif(*r, *jmp_hash),
+            Instruction::Jnif(r, jmp_hash) => self.jnif(*r, *jmp_hash),
+            Instruction::Call(jmp_hash) => self.call(*jmp_hash),
+            Instruction::Ret => self.ret(),
+            Instruction::Push(value_p) => self.push(*value_p),
+            Instruction::Pop(r) => self.pop(*r),
 
             Instruction::Pass => Ok(0),
 

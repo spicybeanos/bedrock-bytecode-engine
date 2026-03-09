@@ -14,6 +14,10 @@ enum PreProcesses {
         values: String,
         line: usize,
     },
+    Label {
+        hash:u64,
+        line:usize
+    }
 }
 
 pub fn construct_from_text(
@@ -219,6 +223,18 @@ fn parse_preprocess_line(
             });
             Ok(())
         }
+        "label" => {
+            let name = str_preproc
+                .get(1)
+                .ok_or(BuildError::InvalidOrMissingParameter)?
+                .clone();
+            let hash = hash_string_vm(&name);
+            pre_proccess_cmds.push(PreProcesses::Label {
+                hash,
+                line: line_number,
+            });
+            Ok(())
+        }
         _ => Err(BuildError::InvalidParameter),
     }
 }
@@ -235,6 +251,9 @@ fn apply_preprocess_cmds(vm: &mut VM, pre_proccess_cmds: &Vec<PreProcesses>) -> 
                     buff.push(parse_blob_number(token).map_err(|err| err.at_line(*line))?);
                 }
                 vm.vi_ram.insert(hash_string_vm(name), buff);
+            }
+            PreProcesses::Label { hash, line } => {
+                vm.label_indexs.insert(*hash,*line);
             }
         }
     }
@@ -498,9 +517,6 @@ fn instruction_from_string(str: &Vec<String>) -> Result<Instruction, BuildError>
             resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
         )),
 
-        "label" => Ok(Instruction::Label(resolve_param_u64_or_hash(
-            str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?,
-        )?)),
         "jmp" => Ok(Instruction::Jmp(resolve_param_u64_or_hash(
             str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?,
         )?)),

@@ -23,7 +23,7 @@ impl VM {
             InstrParam::Register(r2) => f64::from_bits(self.reg[*r2 as usize]),
             InstrParam::Value(v) => f64::from_bits(*v),
         };
-        let res = 1 / val;
+        let res = 1.0 / val;
         self.reg[r as usize] = res.to_bits();
         return self.reg[r as usize];
     }

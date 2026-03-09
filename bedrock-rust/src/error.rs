@@ -3,6 +3,9 @@ pub enum RuntimeError {
     InvalidAddress,
     OutOfBounds,
     NotOwnerOfBuffer,
+    InvalidJumpHash,
+    EmptyCallStack,
+    EmptyStack
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

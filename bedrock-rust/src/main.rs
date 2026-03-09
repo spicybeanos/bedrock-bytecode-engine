@@ -89,13 +89,16 @@ fn runtime_error_name(err: &error::RuntimeError) -> &'static str {
         error::RuntimeError::InvalidAddress => "invalid address",
         error::RuntimeError::OutOfBounds => "out of bounds",
         error::RuntimeError::NotOwnerOfBuffer => "not owner of buffer",
+        error::RuntimeError::InvalidJumpHash => "invalid jump label hash",
+        error::RuntimeError::EmptyCallStack => "Empty call stack",
+        error::RuntimeError::EmptyStack => "Empty stack"
     }
 }
 
 fn main() {
     let path = match std::env::args().nth(1) {
         Some(path) => path,
-        None => {
+        _ => {
             test::run_math_test();
             test::run_memory_test();
             return;

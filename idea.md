@@ -14,7 +14,7 @@ This project provides a high-level Intermediate Representation (IR) designed as 
 
 ### Memory Model
 *   **ViRam (Virtual RAM):** A private, segmented memory space unique to each script instance. It maps virtual handles to real memory blocks. All accesses are bounds-checked.
-*   **PVram (Persistent RAM):** A global shared memory space accessible by all scripts **within the same engine**.
+*   **PVram (Public RAM):** A global shared memory space accessible by all scripts **within the same engine**.
     *   **Ownership:** The script that allocates a block is the "Owner" (identified by a unique `vm_id`).
     *   **Permissions:** Only the Owner can write; all other scripts have read-only access.
     *   **Synchronization:** Uses a **Seqlock** pattern. Readers wait/retry if an Owner is writing to ensure data consistency without heavy mutexes.
