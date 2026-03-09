@@ -1,5 +1,3 @@
-:string .s1 "hello world" 
-
-label :main
-    mov r1 .s1
-    syscall1 :print r1 r2
+alloc r1 8
+mov r2 0x234ABC
+writew r2 r1 0
