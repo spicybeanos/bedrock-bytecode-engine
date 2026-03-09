@@ -1,4 +1,7 @@
-use crate::{error::RuntimeError, vm::{InstrParam, VM}};
+use crate::{
+    error::RuntimeError,
+    vm::{InstrParam, VM},
+};
 /*
     *Jmp(u64),
     *Jif(u8, u64),
@@ -9,9 +12,10 @@ use crate::{error::RuntimeError, vm::{InstrParam, VM}};
     *Push(InstrParam),
     *Pop(u8),
 */
+const MAX_STACK_SIZE: usize = 0x10000;
 impl VM {
     pub fn jmp(&mut self, jmp_hash: u64) -> Result<u64, RuntimeError> {
-        let pc : usize = *self
+        let pc: usize = *self
             .label_indexs
             .get(&jmp_hash)
             .ok_or(RuntimeError::InvalidJumpHash)?;
@@ -19,7 +23,7 @@ impl VM {
         Ok(pc as u64)
     }
     pub fn jif(&mut self, r: u8, jmp_hash: u64) -> Result<u64, RuntimeError> {
-        let pc : usize = *self
+        let pc: usize = *self
             .label_indexs
             .get(&jmp_hash)
             .ok_or(RuntimeError::InvalidJumpHash)?;
@@ -31,7 +35,7 @@ impl VM {
         Ok(0)
     }
     pub fn jnif(&mut self, r: u8, jmp_hash: u64) -> Result<u64, RuntimeError> {
-        let pc : usize = *self
+        let pc: usize = *self
             .label_indexs
             .get(&jmp_hash)
             .ok_or(RuntimeError::InvalidJumpHash)?;
@@ -49,6 +53,9 @@ impl VM {
             .ok_or(RuntimeError::InvalidJumpHash)?;
         let old_pc = self.pc;
         self.call_stack.push(old_pc);
+        if self.call_stack.len() >= MAX_STACK_SIZE {
+            return Err(RuntimeError::CallStackOverflow);
+        }
         self.pc = pc;
         Ok(old_pc as u64)
     }
@@ -60,10 +67,13 @@ impl VM {
     pub fn push(&mut self, value_p: InstrParam) -> Result<u64, RuntimeError> {
         let value = self.resolve_param(&value_p);
         self.stack.push(value);
+        if self.stack.len() >= MAX_STACK_SIZE {
+            return Err(RuntimeError::StackOverflow);
+        }
         Ok(value)
     }
     pub fn pop(&mut self, r: u8) -> Result<u64, RuntimeError> {
-        let value :u64= self.stack.pop().ok_or(RuntimeError::EmptyStack)?;
+        let value: u64 = self.stack.pop().ok_or(RuntimeError::EmptyStack)?;
         self.reg[r as usize] = value;
         Ok(value)
     }

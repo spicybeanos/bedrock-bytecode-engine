@@ -5,7 +5,9 @@ pub enum RuntimeError {
     NotOwnerOfBuffer,
     InvalidJumpHash,
     EmptyCallStack,
-    EmptyStack
+    EmptyStack,
+    CallStackOverflow,
+    StackOverflow,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

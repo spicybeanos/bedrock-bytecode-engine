@@ -91,7 +91,9 @@ fn runtime_error_name(err: &error::RuntimeError) -> &'static str {
         error::RuntimeError::NotOwnerOfBuffer => "not owner of buffer",
         error::RuntimeError::InvalidJumpHash => "invalid jump label hash",
         error::RuntimeError::EmptyCallStack => "Empty call stack",
-        error::RuntimeError::EmptyStack => "Empty stack"
+        error::RuntimeError::EmptyStack => "Empty stack",
+        error::RuntimeError::CallStackOverflow => "call stack overflow",
+        error::RuntimeError::StackOverflow => "stack overflow",
     }
 }
 
