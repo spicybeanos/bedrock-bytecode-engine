@@ -153,6 +153,7 @@ impl VM {
             //maths
             Instruction::Add(r, v2) => Ok(self.add(*r, v2)),
             Instruction::Fadd(r, v2) => Ok(self.fadd(*r, v2)),
+            Instruction::Finv(r, v2) => Ok(self.finv(*r, v2)),
             Instruction::Sub(r, v2) => Ok(self.sub(*r, v2)),
             Instruction::Fsub(r, v2) => Ok(self.fsub(*r, v2)),
             Instruction::Mult(r, v2) => Ok(self.mult(*r, v2)),

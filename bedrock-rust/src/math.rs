@@ -18,6 +18,15 @@ impl VM {
         self.reg[r as usize] = res.to_bits();
         return self.reg[r as usize];
     }
+    pub fn finv(&mut self, r: u8, v2: &InstrParam) -> u64 {
+        let val = match v2 {
+            InstrParam::Register(r2) => f64::from_bits(self.reg[*r2 as usize]),
+            InstrParam::Value(v) => f64::from_bits(*v),
+        };
+        let res = 1 / val;
+        self.reg[r as usize] = res.to_bits();
+        return self.reg[r as usize];
+    }
 
     pub fn sub(&mut self, r: u8, v2: &InstrParam) -> u64 {
         let val = match v2 {
