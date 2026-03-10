@@ -88,8 +88,8 @@ pub enum Instruction {
     Mov(u8, InstrParam),
     Itof(u8, u8),
     Ftoi(u8, u8),
-    SyscallH(u64, InstrParam, u8),
-    Syscall1(u64, InstrParam, u8),
+    SyscallH(u64, InstrParam, InstrParam),
+    Syscall1(u64, InstrParam, InstrParam),
 }
 
 pub struct PVramEntry {
@@ -220,6 +220,8 @@ impl VM {
             Instruction::Ret => self.ret(),
             Instruction::Push(value_p) => self.push(*value_p),
             Instruction::Pop(r) => self.pop(*r),
+
+            Instruction::SyscallH(h, handle, dest) => self.syscallh(*h, *handle, *dest),
 
             Instruction::Pass => Ok(0),
 

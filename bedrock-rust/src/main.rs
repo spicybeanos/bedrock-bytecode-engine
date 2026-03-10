@@ -103,6 +103,8 @@ fn main() {
         _ => {
             test::run_math_test();
             test::run_memory_test();
+
+            test::print_hashes();
             return;
         }
     };

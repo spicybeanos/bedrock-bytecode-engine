@@ -558,12 +558,12 @@ fn instruction_from_string(str: &Vec<String>) -> Result<Instruction, BuildError>
         "syscallh" => Ok(Instruction::SyscallH(
             resolve_param_u64_or_hash(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
             resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param_reg(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
+            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
         )),
         "syscall1" => Ok(Instruction::Syscall1(
             resolve_param_u64_or_hash(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
             resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param_reg(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
+            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
         )),
         "" => Ok(Instruction::Pass),
 

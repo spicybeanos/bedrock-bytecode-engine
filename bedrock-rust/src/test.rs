@@ -1,4 +1,7 @@
-use crate::vm::{GlobalState, InstrParam, Instruction, VM};
+use crate::{
+    utils::hash_string_vm,
+    vm::{GlobalState, InstrParam, Instruction, VM},
+};
 
 pub fn run_math_test() {
     let instr = vec![
@@ -12,6 +15,29 @@ pub fn run_math_test() {
     let _ = vm.run(&instr, 0);
 
     println!("value of r1 = {}", vm.reg[1]);
+}
+
+pub fn print_hashes() {
+    let fxns = vec![
+        "io.console.print",
+        "io.console.read_line",
+        "io.file.read",
+        "io.file.write",
+        "io.file.append",
+        "io.file.exists",
+        "io.file.length",
+        "u64.from_string",
+        "i64.from_string",
+        "f64.from_string",
+        "u64.to_string",
+        "i64.to_string",
+        "f64.to_string",
+    ];
+    println!("hashes");
+    for f in fxns {
+        let h = hash_string_vm(f);
+        println!("{} -> {} ({:X})",f,h,h);
+    }
 }
 
 pub fn run_memory_test() {

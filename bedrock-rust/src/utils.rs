@@ -12,6 +12,15 @@ pub fn read_u64(data: &[u8], offset: usize) -> u64 {
     let bytes = &data[offset..offset + 8];
     u64::from_le_bytes(bytes.try_into().unwrap())
 }
+pub fn read_f64(data: &[u8], offset: usize) -> f64 {
+    let bytes = &data[offset..offset + 8];
+    f64::from_le_bytes(bytes.try_into().unwrap())
+}
+pub fn read_i64(data: &[u8], offset: usize) -> i64 {
+    let bytes = &data[offset..offset + 8];
+    i64::from_le_bytes(bytes.try_into().unwrap())
+}
+
 pub fn write_u64(data: &mut [u8], offset: usize, value: u64) {
     let bytes = value.to_le_bytes();
     data[offset..offset + 8].copy_from_slice(&bytes);
