@@ -1,1 +1,4 @@
 /bedrock-rust/target
+/csharp/bin
+/csharp/obj
+*.tmp

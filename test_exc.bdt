@@ -1,0 +1,35 @@
+:buff mode 1 0 0 0 0 0 0 0
+:buff tiny 1
+
+readw r0 .mode 0
+eq r1 r0 1
+jif r1 :case_invalid_jump
+eq r1 r0 2
+jif r1 :case_empty_call_stack
+eq r1 r0 3
+jif r1 :case_empty_stack
+eq r1 r0 4
+jif r1 :case_invalid_address
+eq r1 r0 5
+jif r1 :case_out_of_bounds
+eq r1 r0 6
+jif r1 :case_unknown_syscall
+jmp :case_invalid_jump
+
+:label case_invalid_jump
+jmp :missing_label
+
+:label case_empty_call_stack
+ret
+
+:label case_empty_stack
+pop r2
+
+:label case_invalid_address
+read r3 0 0
+
+:label case_out_of_bounds
+readw r4 .tiny 0
+
+:label case_unknown_syscall
+syscallh 0xDEADBEEF .mode .mode

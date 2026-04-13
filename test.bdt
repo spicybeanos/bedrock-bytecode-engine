@@ -1,0 +1,137 @@
+:string hello "HELLO"
+:string path "c:\Users\AryanD\programming\bedrock-bytecode-engine\test_io.tmp"
+:string stable_path "c:\Users\AryanD\programming\bedrock-bytecode-engine\example.bdt"
+:string num_u64 "123456789"
+:string num_i64 "-123456789"
+:string num_f64 "3.5"
+:buff hello_bytes 72 69 76 76 79
+:buff io_buf 0 0 0 0 0 0 0 0 0 0
+:buff num_buf 0 0 0 0 0 0 0 0
+:buff out_u64 0 0 0 0 0 0 0 0 0
+:buff out_i64 0 0 0 0 0 0 0 0 0 0
+:buff out_f64 0 0 0
+:buff nl 10
+
+mov r1 .hello
+syscallh 0x939583C88643DA33 .hello .io_buf
+syscallh 0x939583C88643DA33 .nl .io_buf
+
+alloc r10 16
+mov r11 0x1122334455667788
+writew r11 r10 0
+oread r12 r10 0
+write r11 r10 8
+read r13 r10 8
+check r14 r10 8
+vlen r15 r10
+push r12
+pop r16
+realloc r10 24
+mov r17 0xAABBCCDDEEFF0011
+owrite r17 r10 8
+readw r18 r10 8
+vlen r19 r10
+free r10
+vlen r20 r10
+check r21 r10 0
+
+palloc r30 16
+mov r31 0x0102030405060708
+pwritew r31 r30 0
+preadw r32 r30 0
+pwrite r31 r30 8
+pread r33 r30 8
+pcheck r34 r30 8
+pvlen r35 r30
+powner r36 r30
+prealloc r30 24
+pvlen r37 r30
+pfree r30
+pvlen r38 r30
+pcheck r39 r30 0
+
+mov r40 20
+mov r41 4
+add r40 r41
+sub r40 2
+mult r40 3
+div r40 2
+mod r40 5
+lshift r40 1
+rshift r40 1
+sqrt r40 81
+mov r42 1.5
+mov r43 2.5
+fadd r42 r43
+fsub r42 0.5
+fmult r42 2.0
+fdiv r42 2.0
+fmod r42 1.25
+fsqrt r44 9.0
+finv r45 4.0
+itof r46 r40
+ftoi r47 r46
+eq r48 r40 9
+neq r49 r40 10
+lt r50 r40 10
+gt r51 r40 8
+lte r52 r40 9
+gte r53 r40 9
+and r54 0xF0 0x0F
+or r55 0xF0 0x0F
+xor r56 0xFF 0x0F
+not r57 0x0F
+feq r58 r42 r42
+fneq r59 r42 r43
+flt r60 r42 r43
+fgt r61 r43 r42
+flte r62 r42 r42
+fgte r63 r43 r42
+
+mov r70 1
+jif r70 :jif_taken
+mov r71 999
+:label jif_taken
+    mov r72 0
+    jnif r72 :jnif_taken
+    mov r73 999
+:label jnif_taken
+    jmp :after_dead
+:label dead_block
+    mov r74 999
+:label after_dead
+    call :subroutine
+    ecall 0 0
+    push 123
+    pop r75
+
+:label subroutine
+mov r76 77
+ret
+
+syscall1 0x5F1C2A5DD8A72C34 .num_u64 .num_buf
+readw r77 .num_buf 0
+syscallh 0x7118981E0DB56297 .num_buf .out_u64
+syscallh 0x939583C88643DA33 .out_u64 .io_buf
+syscallh 0x939583C88643DA33 .nl .io_buf
+
+syscall1 0xDF1A83BF8FBBBA68 .num_i64 .num_buf
+readw r78 .num_buf 0
+syscallh 0xD6922AD279C2F043 .num_buf .out_i64
+syscallh 0x939583C88643DA33 .out_i64 .io_buf
+syscallh 0x939583C88643DA33 .nl .io_buf
+
+syscall1 0x60D7394919E29C45 .num_f64 .num_buf
+readw r79 .num_buf 0
+syscallh 0x05CB2D0209CD628A .num_buf .out_f64
+syscallh 0x939583C88643DA33 .out_f64 .io_buf
+syscallh 0x939583C88643DA33 .nl .io_buf
+
+syscallh 0x31AA20F5AF2D74BF .stable_path .num_buf
+readw r80 .num_buf 0
+syscallh 0xB47329EB57B9802F .stable_path .num_buf
+readw r81 .num_buf 0
+syscallh 0x5072E3C89F8F6402 .path .hello_bytes
+syscallh 0x54351F5BB08D5BF7 .path .hello_bytes
+syscallh 0x38E75B427198D6E3 .path .io_buf
+syscallh 0x939583C88643DA33 .io_buf .nl
