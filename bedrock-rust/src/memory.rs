@@ -1,6 +1,6 @@
 use crate::{
     error::RuntimeError,
-    vm::{GlobalState, InstrParam, PVramEntry, VM},
+    vm::{InstrParam, PVramEntry, VM},
 };
 use std::cmp;
 use crate::utils::hash_u64_vm;

@@ -222,6 +222,7 @@ impl VM {
             Instruction::Pop(r) => self.pop(*r),
 
             Instruction::SyscallH(h, handle, dest) => self.syscallh(*h, *handle, *dest),
+            Instruction::Syscall1(h, arg, dest) => self.syscall1(*h, *arg, *dest),
 
             Instruction::Pass => Ok(0),
 
