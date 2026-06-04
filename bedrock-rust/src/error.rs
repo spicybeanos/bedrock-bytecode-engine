@@ -4,6 +4,7 @@ pub enum RuntimeError {
     OutOfBounds,
     NotOwnerOfBuffer,
     InvalidJumpHash,
+    
     EmptyCallStack,
     EmptyStack,
     CallStackOverflow,
@@ -16,6 +17,7 @@ pub enum BuildErrorKind {
     InvalidParameter,
     InvalidOrMissingParameter,
     FileSizeLT0,
+    DuplicateVMId,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

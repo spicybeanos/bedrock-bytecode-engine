@@ -35,8 +35,7 @@ namespace BedrockBytecodeEngine
         
         }
         public Dictionary<ulong, PVramEntry> PVram { get; } = new Dictionary<ulong, PVramEntry>();
-        public Dictionary<ulong, Dictionary<ulong, ulong>> Attendance { get; } =
-            new Dictionary<ulong, Dictionary<ulong, ulong>>();
+        public HashSet<ulong> vm_ids { get; set;} = new HashSet<ulong>();
 
         public static void NewShared()
         {
@@ -60,9 +59,12 @@ namespace BedrockBytecodeEngine
 
         public VM(ulong id)
         {
+            if(GlobalState.Instance.vm_ids.Contains(id))
+                throw new BuildErrorException(BuildErrorKind.DuplicateVMId);
             Id = id;
             Reg = new ulong[MaxRegisters];
             Pc = 0;
+            GlobalState.Instance.vm_ids.Add(id);
         }
 
         public ulong Run(List<Instruction> instructions, int start)

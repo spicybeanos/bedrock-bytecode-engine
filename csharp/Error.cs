@@ -7,7 +7,8 @@ namespace BedrockBytecodeEngine
         UnknownInstruction,
         InvalidParameter,
         InvalidOrMissingParameter,
-        FileSizeLT0
+        FileSizeLT0,
+        DuplicateVMId,
     }
 
     public enum RuntimeError
@@ -16,6 +17,7 @@ namespace BedrockBytecodeEngine
         InvalidAddress,
         OutOfBounds,
         NotOwnerOfBuffer,
+        
         InvalidJumpHash,
         EmptyCallStack,
         EmptyStack,

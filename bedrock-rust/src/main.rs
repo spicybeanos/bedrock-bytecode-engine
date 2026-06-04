@@ -80,6 +80,7 @@ fn build_error_name(kind: error::BuildErrorKind) -> &'static str {
         error::BuildErrorKind::InvalidParameter => "invalid parameter",
         error::BuildErrorKind::InvalidOrMissingParameter => "invalid or missing parameter",
         error::BuildErrorKind::FileSizeLT0 => "invalid file size",
+        error::BuildErrorKind::DuplicateVMId => "duplicate VM ID",
     }
 }
 
@@ -101,9 +102,6 @@ fn main() {
     let path = match std::env::args().nth(1) {
         Some(path) => path,
         _ => {
-            test::run_math_test();
-            test::run_memory_test();
-
             test::print_hashes();
             return;
         }

@@ -111,17 +111,17 @@ namespace BedrockBytecodeEngine
         static void DumpPVram(VM vm)
         {
             Console.WriteLine("p_vram memdump:");
-            if (vm.Global.PVram.Count == 0)
+            if (GlobalState.Instance.PVram.Count == 0)
             {
                 Console.WriteLine("<empty>");
                 return;
             }
 
-            var addrs = vm.Global.PVram.Keys.OrderBy(x => x).ToList();
+            var addrs = GlobalState.Instance.PVram.Keys.OrderBy(x => x).ToList();
 
             foreach (ulong addr in addrs)
             {
-                PVramEntry entry = vm.Global.PVram[addr];
+                PVramEntry entry = GlobalState.Instance.PVram[addr];
                 Console.Write(
                     $"addr {addr} (0x{addr:X}) owner {entry.OwnerId} len {entry.Data.Length}: "
                 );
@@ -144,8 +144,8 @@ namespace BedrockBytecodeEngine
                 new Mult(1, InstrParam.Reg(2))
             };
 
-            GlobalState global = new GlobalState();
-            VM vm = new VM(1, global);
+            GlobalState.NewShared();
+            VM vm = new VM(1);
             vm.Run(instr, 0);
 
             Console.WriteLine($"value of r1 = {vm.Reg[1]}");
@@ -188,8 +188,8 @@ namespace BedrockBytecodeEngine
                 new ReadW(4, InstrParam.Reg(3), InstrParam.Val(0))
             };
 
-            GlobalState global = new GlobalState();
-            VM vm = new VM(1, global);
+            GlobalState.NewShared();
+            VM vm = new VM(1);
             vm.Run(instr, 0);
 
             Console.WriteLine($"value written: {vm.Reg[1]}");

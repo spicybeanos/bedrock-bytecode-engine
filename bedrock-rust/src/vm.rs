@@ -1,6 +1,6 @@
-use crate::error::RuntimeError;
+use crate::error::{BuildErrorKind, RuntimeError};
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 #[derive(Clone, Copy)]
@@ -109,21 +109,29 @@ pub struct VM {
 
 pub struct GlobalState {
     pub p_vram: HashMap<u64, PVramEntry>,            // Shared memory
-    pub attendance: HashMap<u64, HashMap<u64, u64>>, // [ModHash][FuncHash] -> PC
+    // pub attendance: HashMap<u64, HashMap<u64, u64>>, // [ModHash][FuncHash] -> PC
+    pub vm_ids: HashSet<u64>, // Set of all active VM IDs
 }
 
 impl GlobalState {
     pub fn new_shared() -> Rc<RefCell<GlobalState>> {
         Rc::new(RefCell::new(GlobalState {
             p_vram: HashMap::new(),
-            attendance: HashMap::new(),
+            // attendance: HashMap::new(),
+            vm_ids: HashSet::new(),
         }))
     }
 }
 
 impl VM {
-    pub fn new(id: u64, global: Rc<RefCell<GlobalState>>) -> VM {
-        return VM {
+    pub fn new(id: u64, global: Rc<RefCell<GlobalState>>) -> Result<VM, BuildErrorKind> {
+        if global.borrow().vm_ids.contains(&id) {
+            return Err(BuildErrorKind::DuplicateVMId);
+        }
+
+        global.borrow_mut().vm_ids.insert(id);
+
+        Ok(VM {
             reg: std::array::from_fn(|_| 0),
             pc: 0,
             id,
@@ -132,7 +140,7 @@ impl VM {
             stack: Vec::new(),
             call_stack: Vec::new(),
             global,
-        };
+        })
     }
     pub fn run(&mut self, instr: &Vec<Instruction>, start: usize) -> Result<u64, RuntimeError> {
         self.pc = start;

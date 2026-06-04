@@ -25,7 +25,7 @@ pub fn construct_from_text(
     global: Rc<RefCell<GlobalState>>,
     text: &Vec<char>,
 ) -> Result<(VM, Vec<Instruction>), BuildError> {
-    let mut vm = VM::new(id, global);
+    let mut vm = VM::new(id, global)?;
     let mut instructions = Vec::<Instruction>::new();
     let mut pre_proccess_cmds = Vec::<PreProcesses>::new();
 
