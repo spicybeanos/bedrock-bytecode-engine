@@ -68,6 +68,9 @@ impl VM {
             .vi_ram
             .get_mut(&addr)
             .ok_or(RuntimeError::InvalidAddress)?;
+        if k + 8 > buff.len() {
+            return Err(RuntimeError::OutOfBounds);
+        }
         buff[k as usize] = self.reg[r as usize] as u8;
         Ok(self.reg[r as usize])
     }
@@ -361,7 +364,6 @@ impl VM {
             PVramEntry {
                 data: vec![0; size as usize],
                 owner_id: self.id,
-                sequence: Into::into(0),
             },
         );
         self.reg[r as usize] = addr;
@@ -392,7 +394,6 @@ impl VM {
             PVramEntry {
                 data: new_vec,
                 owner_id: self.id,
-                sequence: Into::into(0),
             },
         );
         return Ok(0);

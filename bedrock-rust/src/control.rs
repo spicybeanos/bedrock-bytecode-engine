@@ -1,7 +1,4 @@
-use crate::{
-    error::RuntimeError,
-    vm::{InstrParam, VM},
-};
+use crate::{ error::RuntimeError, vm::{ InstrParam, VM } };
 /*
     *Jmp(u64),
     *Jif(u8, u64),
@@ -15,18 +12,12 @@ use crate::{
 const MAX_STACK_SIZE: usize = 0x10000;
 impl VM {
     pub fn jmp(&mut self, jmp_hash: u64) -> Result<u64, RuntimeError> {
-        let pc: usize = *self
-            .label_indexs
-            .get(&jmp_hash)
-            .ok_or(RuntimeError::InvalidJumpHash)?;
+        let pc: usize = *self.label_indexs.get(&jmp_hash).ok_or(RuntimeError::InvalidJumpHash)?;
         self.pc = pc;
         Ok(pc as u64)
     }
     pub fn jif(&mut self, r: u8, jmp_hash: u64) -> Result<u64, RuntimeError> {
-        let pc: usize = *self
-            .label_indexs
-            .get(&jmp_hash)
-            .ok_or(RuntimeError::InvalidJumpHash)?;
+        let pc: usize = *self.label_indexs.get(&jmp_hash).ok_or(RuntimeError::InvalidJumpHash)?;
         let cond = self.reg[r as usize];
         if cond == 1 {
             self.pc = pc;
@@ -35,10 +26,7 @@ impl VM {
         Ok(0)
     }
     pub fn jnif(&mut self, r: u8, jmp_hash: u64) -> Result<u64, RuntimeError> {
-        let pc: usize = *self
-            .label_indexs
-            .get(&jmp_hash)
-            .ok_or(RuntimeError::InvalidJumpHash)?;
+        let pc: usize = *self.label_indexs.get(&jmp_hash).ok_or(RuntimeError::InvalidJumpHash)?;
         let cond = self.reg[r as usize];
         if cond != 1 {
             self.pc = pc;
@@ -47,17 +35,16 @@ impl VM {
         Ok(0)
     }
     pub fn call(&mut self, jmp_hash: u64) -> Result<u64, RuntimeError> {
-        let pc: usize = *self
-            .label_indexs
-            .get(&jmp_hash)
-            .ok_or(RuntimeError::InvalidJumpHash)?;
-        let old_pc = self.pc;
-        self.call_stack.push(old_pc);
+        let pc: usize = *self.label_indexs.get(&jmp_hash).ok_or(RuntimeError::InvalidJumpHash)?;
+
+        self.call_stack.push(self.pc);
+
         if self.call_stack.len() >= MAX_STACK_SIZE {
             return Err(RuntimeError::CallStackOverflow);
         }
+
         self.pc = pc;
-        Ok(old_pc as u64)
+        Ok(pc as u64)
     }
     pub fn ret(&mut self) -> Result<u64, RuntimeError> {
         let old_pc = self.call_stack.pop().ok_or(RuntimeError::EmptyCallStack)?;

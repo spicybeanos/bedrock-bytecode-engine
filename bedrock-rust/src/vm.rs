@@ -2,7 +2,6 @@ use crate::error::RuntimeError;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::sync::atomic::AtomicU64;
 
 #[derive(Clone, Copy)]
 pub enum InstrParam {
@@ -95,7 +94,6 @@ pub enum Instruction {
 pub struct PVramEntry {
     pub owner_id: u64,
     pub data: Vec<u8>,
-    pub sequence: AtomicU64, // Used for Seqlock synchronization
 }
 
 pub struct VM {
