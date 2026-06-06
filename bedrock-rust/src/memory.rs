@@ -1,7 +1,4 @@
-use crate::{
-    error::RuntimeError,
-    vm::{InstrParam, PVramEntry, VM},
-};
+use crate::{ error::RuntimeError, vm::{ InstrParam, PVramEntry, VM } };
 use std::cmp;
 use crate::utils::hash_u64_vm;
 /*
@@ -45,7 +42,7 @@ impl VM {
         &mut self,
         r: u8,
         addr_p: &InstrParam,
-        k_p: &InstrParam,
+        k_p: &InstrParam
     ) -> Result<u64, RuntimeError> {
         let addr = self.resolve_param(addr_p);
         let k = self.resolve_param(k_p) as usize;
@@ -59,15 +56,12 @@ impl VM {
         &mut self,
         r: u8,
         addr_p: &InstrParam,
-        k_p: &InstrParam,
+        k_p: &InstrParam
     ) -> Result<u64, RuntimeError> {
         let addr = self.resolve_param(addr_p);
         let k = self.resolve_param(k_p) as usize;
 
-        let buff = self
-            .vi_ram
-            .get_mut(&addr)
-            .ok_or(RuntimeError::InvalidAddress)?;
+        let buff = self.vi_ram.get_mut(&addr).ok_or(RuntimeError::InvalidAddress)?;
         if k + 8 > buff.len() {
             return Err(RuntimeError::OutOfBounds);
         }
@@ -76,9 +70,9 @@ impl VM {
     }
     pub fn readw(
         &mut self,
-        r: u8,               // Destination Register
+        r: u8, // Destination Register
         addr_p: &InstrParam, // ViRam Handle
-        k_p: &InstrParam,    // Byte Offset
+        k_p: &InstrParam // Byte Offset
     ) -> Result<u64, RuntimeError> {
         let addr = self.resolve_param(addr_p);
         let k = self.resolve_param(k_p) as usize;
@@ -100,17 +94,14 @@ impl VM {
     }
     pub fn writew(
         &mut self,
-        r: u8,               // Source Register
+        r: u8, // Source Register
         addr_p: &InstrParam, // ViRam Handle
-        k_p: &InstrParam,    // Byte Offset
+        k_p: &InstrParam // Byte Offset
     ) -> Result<u64, RuntimeError> {
         let addr = self.resolve_param(addr_p);
         let k = self.resolve_param(k_p) as usize;
 
-        let buff = self
-            .vi_ram
-            .get_mut(&addr)
-            .ok_or(RuntimeError::InvalidAddress)?;
+        let buff = self.vi_ram.get_mut(&addr).ok_or(RuntimeError::InvalidAddress)?;
 
         // Safety: Check if the buffer is large enough to receive 8 bytes
         if k + 8 > buff.len() {
@@ -128,7 +119,7 @@ impl VM {
         &mut self,
         r: u8,
         addr_p: &InstrParam,
-        k_p: &InstrParam,
+        k_p: &InstrParam
     ) -> Result<u64, RuntimeError> {
         let addr = match addr_p {
             InstrParam::Register(r2) => self.reg[*r2 as usize],
@@ -141,7 +132,7 @@ impl VM {
 
         match self.vi_ram.get(&addr) {
             Option::Some(buff) => {
-                if buff.len() as u64 > k {
+                if (buff.len() as u64) > k {
                     self.reg[r as usize] = 1;
                     Ok(1)
                 } else {
@@ -168,17 +159,18 @@ impl VM {
     }
     pub fn alloc(&mut self, r: u8, size_p: &InstrParam) -> u64 {
         let size = self.resolve_param(size_p);
-        let addr = hash_u64_vm(self.vi_ram.len() as u64);
-
+        let addr = hash_u64_vm(self.next_handle);
+        
+        self.next_handle += 1;
         self.vi_ram.insert(addr, vec![0; size as usize]);
         self.reg[r as usize] = addr;
+
         return 0;
     }
     pub fn realloc(&mut self, r: u8, size_p: &InstrParam) -> Result<u64, RuntimeError> {
         let size = self.resolve_param(size_p);
         let mut new_vec = vec![0; size as usize];
-        let old = self
-            .vi_ram
+        let old = self.vi_ram
             .get(&self.reg[r as usize])
             .ok_or(RuntimeError::InvalidAddress)?
             .to_owned();
@@ -202,20 +194,14 @@ impl VM {
         &mut self,
         r: u8,
         addr_p: &InstrParam,
-        k_p: &InstrParam,
+        k_p: &InstrParam
     ) -> Result<u64, RuntimeError> {
         let addr = self.resolve_param(addr_p);
         let k = self.resolve_param(k_p) as usize;
 
         let global = self.global.borrow();
-        let entry = global
-            .p_vram
-            .get(&addr)
-            .ok_or(RuntimeError::InvalidAddress)?;
-        let val = *entry
-            .data
-            .get(k as usize)
-            .ok_or(RuntimeError::OutOfBounds)? as u64;
+        let entry = global.p_vram.get(&addr).ok_or(RuntimeError::InvalidAddress)?;
+        let val = *entry.data.get(k as usize).ok_or(RuntimeError::OutOfBounds)? as u64;
         self.reg[r as usize] = val;
         Ok(val)
     }
@@ -223,16 +209,13 @@ impl VM {
         &mut self,
         r: u8,
         addr_p: &InstrParam,
-        k_p: &InstrParam,
+        k_p: &InstrParam
     ) -> Result<u64, RuntimeError> {
         let addr = self.resolve_param(addr_p);
         let k = self.resolve_param(k_p) as usize;
 
         let mut global = self.global.borrow_mut();
-        let buff = global
-            .p_vram
-            .get_mut(&addr)
-            .ok_or(RuntimeError::InvalidAddress)?;
+        let buff = global.p_vram.get_mut(&addr).ok_or(RuntimeError::InvalidAddress)?;
         if buff.owner_id != self.id {
             return Err(RuntimeError::NotOwnerOfBuffer);
         }
@@ -241,18 +224,15 @@ impl VM {
     }
     pub fn preadw(
         &mut self,
-        r: u8,               // Destination Register
+        r: u8, // Destination Register
         addr_p: &InstrParam, // ViRam Handle
-        k_p: &InstrParam,    // Byte Offset
+        k_p: &InstrParam // Byte Offset
     ) -> Result<u64, RuntimeError> {
         let addr = self.resolve_param(addr_p);
         let k = self.resolve_param(k_p) as usize;
 
         let global = self.global.borrow();
-        let buff = global
-            .p_vram
-            .get(&addr)
-            .ok_or(RuntimeError::InvalidAddress)?;
+        let buff = global.p_vram.get(&addr).ok_or(RuntimeError::InvalidAddress)?;
 
         // Safety: Check if there are at least 8 bytes available from offset k
         if k + 8 > buff.data.len() {
@@ -269,18 +249,15 @@ impl VM {
     }
     pub fn pwritew(
         &mut self,
-        r: u8,               // Source Register
+        r: u8, // Source Register
         addr_p: &InstrParam, // ViRam Handle
-        k_p: &InstrParam,    // Byte Offset
+        k_p: &InstrParam // Byte Offset
     ) -> Result<u64, RuntimeError> {
         let addr = self.resolve_param(addr_p);
         let k = self.resolve_param(k_p) as usize;
 
         let mut global = self.global.borrow_mut();
-        let buff = global
-            .p_vram
-            .get_mut(&addr)
-            .ok_or(RuntimeError::InvalidAddress)?;
+        let buff = global.p_vram.get_mut(&addr).ok_or(RuntimeError::InvalidAddress)?;
         if buff.owner_id != self.id {
             return Err(RuntimeError::NotOwnerOfBuffer);
         }
@@ -301,7 +278,7 @@ impl VM {
         &mut self,
         r: u8,
         addr_p: &InstrParam,
-        k_p: &InstrParam,
+        k_p: &InstrParam
     ) -> Result<u64, RuntimeError> {
         let addr = match addr_p {
             InstrParam::Register(r2) => self.reg[*r2 as usize],
@@ -316,7 +293,7 @@ impl VM {
 
         match global.p_vram.get(&addr) {
             Option::Some(buff) => {
-                if buff.data.len() as u64 > k {
+                if (buff.data.len() as u64) > k {
                     self.reg[r as usize] = 1;
                     Ok(1)
                 } else {
@@ -357,23 +334,20 @@ impl VM {
     pub fn palloc(&mut self, r: u8, size_p: &InstrParam) -> u64 {
         let size = self.resolve_param(size_p);
         let mut global = self.global.borrow_mut();
-        let addr = hash_u64_vm(global.p_vram.len() as u64 + self.id);
-        
-        global.p_vram.insert(
-            addr,
-            PVramEntry {
-                data: vec![0; size as usize],
-                owner_id: self.id,
-            },
-        );
+        let addr = hash_u64_vm(global.next_global_handle);
+        global.next_global_handle += 1;
+
+        global.p_vram.insert(addr, PVramEntry {
+            data: vec![0; size as usize],
+            owner_id: self.id,
+        });
         self.reg[r as usize] = addr;
         return 0;
     }
     pub fn prealloc(&mut self, r: u8, size_p: &InstrParam) -> Result<u64, RuntimeError> {
         let size = self.resolve_param(size_p);
         let mut global = self.global.borrow_mut();
-        let old = global
-            .p_vram
+        let old = global.p_vram
             .get(&self.reg[r as usize])
             .ok_or(RuntimeError::InvalidAddress)?
             .to_owned();
@@ -389,13 +363,10 @@ impl VM {
             i += 1;
         }
         global.p_vram.remove(&self.reg[r as usize]);
-        global.p_vram.insert(
-            self.reg[r as usize],
-            PVramEntry {
-                data: new_vec,
-                owner_id: self.id,
-            },
-        );
+        global.p_vram.insert(self.reg[r as usize], PVramEntry {
+            data: new_vec,
+            owner_id: self.id,
+        });
         return Ok(0);
     }
     pub fn pfree(&mut self, addr_p: &InstrParam) -> Result<u64, RuntimeError> {

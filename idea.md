@@ -104,6 +104,13 @@ The Virtual RAM maps virtual handles to physical memory addresses. This provides
 2.  **Bounds Enforcement:** Every memory instruction checks the target offset against the allocation size.
 3.  **Stability:** `realloc` may move the physical buffer, but the virtual handle remains constant, ensuring script references never break.
 
+## 6. Program execution
+
+These instructions tell the engine what to do with the VM instance
+1. **halt**: `halt` resigns the from the execution thread. Futher instructions will not be executed and the vm just sits in memory. Instructions from other vms will continue execution.
+2. **panic**: `panic <u64 code> <message address>` resigns the vm, and stops with an error. This error code and message should be shown to the user, the message address will be a ViRam address
+3. **assert**: `assert rx <u64 code> <panic message address>` resigns the vm if `rx` is 0, and stops with an error. This error message should be shown to the user, the message address will be a ViRam address.
+
 **Example Mapping:**
 1. `alloc r1 64`
 2. The VM assigns a handle (e.g., `0x100`) to `r1`.

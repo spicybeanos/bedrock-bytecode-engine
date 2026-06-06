@@ -62,12 +62,8 @@ impl VM {
                 let ret_b = self.vi_ram.get_mut(&dest_addr);
                 match ret_b {
                     Some(ret_buff) => {
-                        if ret_buff.len() > bytes.len() {
-                            ret_buff.copy_from_slice(&bytes);
-                        } else {
-                            self.vi_ram.remove(&dest_addr);
-                            self.vi_ram.insert(dest_addr, bytes.to_vec());
-                        }
+
+                        *ret_buff = bytes.to_vec();
                     }
                     _ => {
                         return Err(RuntimeError::InvalidAddress);
@@ -85,12 +81,7 @@ impl VM {
                 let ret_b = self.vi_ram.get_mut(&dest_addr);
                 match ret_b {
                     Some(ret_buff) => {
-                        if ret_buff.len() > bytes.len() {
-                            ret_buff.copy_from_slice(&bytes);
-                        } else {
-                            self.vi_ram.remove(&dest_addr);
-                            self.vi_ram.insert(dest_addr, bytes.to_vec());
-                        }
+                        *ret_buff = bytes.to_vec();
                     }
                     _ => {
                         return Err(RuntimeError::InvalidAddress);
@@ -108,12 +99,7 @@ impl VM {
                 let ret_b = self.vi_ram.get_mut(&dest_addr);
                 match ret_b {
                     Some(ret_buff) => {
-                        if ret_buff.len() > bytes.len() {
-                            ret_buff.copy_from_slice(&bytes);
-                        } else {
-                            self.vi_ram.remove(&dest_addr);
-                            self.vi_ram.insert(dest_addr, bytes.to_vec());
-                        }
+                        *ret_buff = bytes.to_vec();
                     }
                     _ => {
                         return Err(RuntimeError::InvalidAddress);

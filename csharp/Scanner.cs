@@ -26,12 +26,11 @@ namespace BedrockBytecodeEngine
     {
         public static (VM, List<Instruction>) ConstructFromText(
             ulong id,
-            GlobalState global,
             string text
         )
         {
             RefreshableString workingText = new RefreshableString(text);
-            VM vm = new VM(id, global);
+            VM vm = new VM(id);
             List<Instruction> instructions = new List<Instruction>();
             List<PreProcess> preProccssCmds = new List<PreProcess>();
 

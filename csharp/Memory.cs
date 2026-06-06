@@ -30,7 +30,7 @@ namespace BedrockBytecodeEngine
 
             if (!vm.ViRam.TryGetValue(addr, out byte[] buff))
                 throw new RuntimeErrorException(RuntimeError.InvalidAddress);
-            if (k + 8 > buff.Length)
+            if (k >= buff.Length)
                 throw new RuntimeErrorException(RuntimeError.OutOfBounds);
             buff[k] = (byte)(Reg[r] & 0xFF);
         }
@@ -59,7 +59,7 @@ namespace BedrockBytecodeEngine
         internal static void alloc(byte r,VM vm,ulong[] Reg, InstrParam sizeP)
         {
             ulong size = VM.ResolveParam_reg(sizeP, Reg);
-            ulong handle = Utils.HashU64Vm((ulong)vm.ViRam.Count);
+            ulong handle = Utils.HashU64Vm(vm.nextHandle++);
             vm.ViRam[handle] = new byte[size];
             Reg[r] = handle;
         }
@@ -126,7 +126,7 @@ namespace BedrockBytecodeEngine
         internal static void palloc(byte r,VM vm,ulong[] Reg, InstrParam sizeP)
         {
             ulong size = VM.ResolveParam_reg(sizeP, Reg);
-            ulong handle = Utils.HashU64Vm((ulong)GlobalState.Instance.PVram.Count + vm.Id);
+            ulong handle = Utils.HashU64Vm(GlobalState.Instance.nextGlobalHandle++);
             GlobalState.Instance.PVram[handle] = new PVramEntry(vm.Id, new byte[size]);
             Reg[r] = handle;
         }
@@ -203,8 +203,6 @@ namespace BedrockBytecodeEngine
             if (entry.OwnerId != vm.Id)
                 throw new RuntimeErrorException(RuntimeError.NotOwnerOfBuffer);
             if (k >= entry.Data.Length)
-                throw new RuntimeErrorException(RuntimeError.OutOfBounds);
-            if (k + 8 > entry.Data.Length)
                 throw new RuntimeErrorException(RuntimeError.OutOfBounds);
             entry.Data[k] = (byte)(Reg[r] & 0xFF);
         }

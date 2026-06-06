@@ -8,6 +8,30 @@ namespace BedrockBytecodeEngine
     {
         private const ulong FNV_OFFSET_BASIS = 0xcbf29ce484222325;
         private const ulong FNV_PRIME = 0x00000100000001B3;
+        internal static void WriteBufferBytes(VM vm,ulong addr, byte[] bytes)
+        {
+            if (!vm.ViRam.ContainsKey(addr))
+                throw new RuntimeErrorException(RuntimeError.InvalidAddress);
+            vm.ViRam[addr] = bytes;
+        }
+
+        internal static void WriteBufferU64(VM vm, ulong addr, ulong value)
+        {
+            WriteBufferBytes(vm, addr, BitConverter.GetBytes(value));
+        }
+        internal static void WriteStringLikeRust(VM vm, ulong addr, byte[] bytes)
+        {
+            if (!vm.ViRam.TryGetValue(addr, out byte[] dest))
+                throw new RuntimeErrorException(RuntimeError.InvalidAddress);
+
+            if (dest.Length > bytes.Length)
+            {
+                Array.Copy(bytes, 0, dest, 0, bytes.Length);
+                return;
+            }
+
+            vm.ViRam[addr] = bytes;
+        }
 
         public static ulong HashStringVm(string str)
         {

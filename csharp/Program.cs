@@ -39,12 +39,11 @@ namespace BedrockBytecodeEngine
                 return;
             }
 
-            GlobalState global = new GlobalState();
             VM vm;
             List<Instruction> instructions;
             try
             {
-                (vm, instructions) = Scanner.ConstructFromText(1, global, content);
+                (vm, instructions) = Scanner.ConstructFromText(1, content);
             }
             catch (BuildErrorException ex)
             {

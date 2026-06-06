@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 
 namespace BedrockBytecodeEngine
@@ -32,10 +33,11 @@ namespace BedrockBytecodeEngine
             {
                 _instance = value;
             }
-        
+
         }
+        internal ulong nextGlobalHandle = 1;
         public Dictionary<ulong, PVramEntry> PVram { get; } = new Dictionary<ulong, PVramEntry>();
-        public HashSet<ulong> vm_ids { get; set;} = new HashSet<ulong>();
+        public HashSet<ulong> vm_ids { get; set; } = new HashSet<ulong>();
 
         public static void NewShared()
         {
@@ -51,15 +53,16 @@ namespace BedrockBytecodeEngine
         public ulong Id { get; }
         public ulong[] Reg { get; }
         public int Pc { get; set; }
+        internal ulong nextHandle = 1;
         public Dictionary<ulong, byte[]> ViRam { get; } = new Dictionary<ulong, byte[]>();
         public Dictionary<ulong, int> LabelIndexs { get; } = new Dictionary<ulong, int>();
-        public List<ulong> Stack { get; } = new List<ulong>();
-        public List<int> CallStack { get; } = new List<int>();
+        public Stack<ulong> Stack { get; } = new Stack<ulong>();
+        public Stack<int> CallStack { get; } = new Stack<int>();
         // public GlobalState Global { get; }
 
         public VM(ulong id)
         {
-            if(GlobalState.Instance.vm_ids.Contains(id))
+            if (GlobalState.Instance.vm_ids.Contains(id))
                 throw new BuildErrorException(BuildErrorKind.DuplicateVMId);
             Id = id;
             Reg = new ulong[MaxRegisters];
@@ -301,7 +304,7 @@ namespace BedrockBytecodeEngine
         {
             return param.Type == InstrParamType.Register ? Reg[param.RegisterId] : param.Value;
         }
-        
+
 
         // System Calls
         private string ReadBufferString(ulong addr)
@@ -312,20 +315,7 @@ namespace BedrockBytecodeEngine
             return str;
         }
 
-        private void WriteBufferBytes(ulong addr, byte[] bytes)
-        {
-            if (!ViRam.TryGetValue(addr, out byte[] buff))
-                throw new RuntimeErrorException(RuntimeError.InvalidAddress);
-            Array.Clear(buff, 0, buff.Length);
-            Array.Resize(ref buff, bytes.Length);
-            Array.Copy(bytes, buff, bytes.Length);
-            ViRam[addr] = buff;
-        }
 
-        private void WriteBufferU64(ulong addr, ulong value)
-        {
-            WriteBufferBytes(addr, BitConverter.GetBytes(value));
-        }
 
         private void syscallh_impl(ulong hash, InstrParam handleP, InstrParam destP)
         {
@@ -340,7 +330,7 @@ namespace BedrockBytecodeEngine
                         if (!ViRam.TryGetValue(handleAddr, out byte[] buff))
                             throw new RuntimeErrorException(RuntimeError.InvalidAddress);
                         string text = BitConverter.ToUInt64(buff, 0).ToString(CultureInfo.InvariantCulture);
-                        WriteStringLikeRust(destAddr, Encoding.UTF8.GetBytes(text));
+                        Utils.WriteBufferBytes(this, destAddr, Encoding.UTF8.GetBytes(text));
                         break;
                     }
                 // i64.to_string -> 0xD6922AD279C2F043
@@ -349,16 +339,16 @@ namespace BedrockBytecodeEngine
                         if (!ViRam.TryGetValue(handleAddr, out byte[] buff))
                             throw new RuntimeErrorException(RuntimeError.InvalidAddress);
                         string text = BitConverter.ToInt64(buff, 0).ToString(CultureInfo.InvariantCulture);
-                        WriteStringLikeRust(destAddr, Encoding.UTF8.GetBytes(text));
+                        Utils.WriteBufferBytes(this, destAddr, Encoding.UTF8.GetBytes(text));
                         break;
                     }
-                // f64.to_string -> 0x5CB2D0209CD628A
-                case 0x05CB2D0209CD628A:
+
+                case 0x5CB2D0209CD628A:
                     {
                         if (!ViRam.TryGetValue(handleAddr, out byte[] buff))
                             throw new RuntimeErrorException(RuntimeError.InvalidAddress);
                         string text = BitConverter.ToDouble(buff, 0).ToString(CultureInfo.InvariantCulture);
-                        WriteStringLikeRust(destAddr, Encoding.UTF8.GetBytes(text));
+                        Utils.WriteBufferBytes(this, destAddr, Encoding.UTF8.GetBytes(text));
                         break;
                     }
                 default:
@@ -378,7 +368,7 @@ namespace BedrockBytecodeEngine
                     {
                         string text = ReadBufferString(argAddr);
                         ulong value = ulong.TryParse(text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out ulong parsed) ? parsed : 0UL;
-                        WriteBufferU64(destAddr, value);
+                        Utils.WriteBufferU64(this, destAddr, value);
                         break;
                     }
                 // i64.from_string -> 0xDF1A83BF8FBBBA68
@@ -386,7 +376,7 @@ namespace BedrockBytecodeEngine
                     {
                         string text = ReadBufferString(argAddr);
                         long value = long.TryParse(text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out long parsed) ? parsed : 0L;
-                        WriteBufferBytes(destAddr, BitConverter.GetBytes(value));
+                        Utils.WriteBufferBytes(this, destAddr, BitConverter.GetBytes(value));
                         break;
                     }
                 // f64.from_string -> 0x60D7394919E29C45
@@ -394,7 +384,7 @@ namespace BedrockBytecodeEngine
                     {
                         string text = ReadBufferString(argAddr);
                         double value = double.TryParse(text.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out double parsed) ? parsed : 0.0;
-                        WriteBufferBytes(destAddr, BitConverter.GetBytes(value));
+                        Utils.WriteBufferBytes(this, destAddr, BitConverter.GetBytes(value));
                         break;
                     }
                 default:
@@ -402,18 +392,6 @@ namespace BedrockBytecodeEngine
             }
         }
 
-        private void WriteStringLikeRust(ulong addr, byte[] bytes)
-        {
-            if (!ViRam.TryGetValue(addr, out byte[] dest))
-                throw new RuntimeErrorException(RuntimeError.InvalidAddress);
 
-            if (dest.Length > bytes.Length)
-            {
-                Array.Copy(bytes, 0, dest, 0, bytes.Length);
-                return;
-            }
-
-            ViRam[addr] = bytes;
-        }
     }
 }

@@ -105,9 +105,11 @@ pub struct VM {
     pub stack: Vec<u64>,      // Data stack
     pub call_stack: Vec<usize>, // Return addresses
     pub global: Rc<RefCell<GlobalState>>,
+    pub next_handle: u64, // For generating unique handles for private memory
 }
 
 pub struct GlobalState {
+    pub next_global_handle: u64,                     // For generating unique handles for global memory
     pub p_vram: HashMap<u64, PVramEntry>,            // Shared memory
     // pub attendance: HashMap<u64, HashMap<u64, u64>>, // [ModHash][FuncHash] -> PC
     pub vm_ids: HashSet<u64>, // Set of all active VM IDs
@@ -116,6 +118,7 @@ pub struct GlobalState {
 impl GlobalState {
     pub fn new_shared() -> Rc<RefCell<GlobalState>> {
         Rc::new(RefCell::new(GlobalState {
+            next_global_handle: 1,
             p_vram: HashMap::new(),
             // attendance: HashMap::new(),
             vm_ids: HashSet::new(),
@@ -140,6 +143,7 @@ impl VM {
             stack: Vec::new(),
             call_stack: Vec::new(),
             global,
+            next_handle: 1,
         })
     }
     pub fn run(&mut self, instr: &Vec<Instruction>, start: usize) -> Result<u64, RuntimeError> {
