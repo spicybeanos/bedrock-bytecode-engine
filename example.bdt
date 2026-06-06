@@ -1,4 +1,4 @@
-:string test "this is a custom error message"
+:string test "ABCD"
 alloc r1 8
 mov r2 0x234ABC
 panic 100 .test

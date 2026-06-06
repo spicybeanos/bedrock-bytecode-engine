@@ -1,6 +1,6 @@
 use crate::error::BuildError;
 use crate::utils::hash_string_vm;
-use crate::vm::{GlobalState, InstrParam, Instruction, VM};
+use crate::vm::{ GlobalState, InstrParam, Instruction, VM };
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -15,15 +15,15 @@ enum PreProcesses {
         line: usize,
     },
     Label {
-        hash:u64,
-        line:usize
-    }
+        hash: u64,
+        line: usize,
+    },
 }
 
 pub fn construct_from_text(
     id: u64,
     global: Rc<RefCell<GlobalState>>,
-    text: &Vec<char>,
+    text: &Vec<char>
 ) -> Result<(VM, Vec<Instruction>), BuildError> {
     let mut vm = VM::new(id, global)?;
     let mut instructions = Vec::<Instruction>::new();
@@ -40,10 +40,7 @@ pub fn construct_from_text(
     let mut str_preproc = Vec::<String>::new();
 
     while index < len {
-        match *text
-            .get(index)
-            .ok_or(BuildError::FileSizeLT0.at_line(line_number))?
-        {
+        match *text.get(index).ok_or(BuildError::FileSizeLT0.at_line(line_number))? {
             ' ' | '\t' if !in_quotes => {
                 push_current_token(&mut cur, pre_proccess, &mut str_line, &mut str_preproc);
                 line_start = false;
@@ -56,7 +53,7 @@ pub fn construct_from_text(
                     &mut str_preproc,
                     &mut pre_proccess_cmds,
                     &mut instructions,
-                    line_number,
+                    line_number
                 )?;
                 pre_proccess = false;
                 line_start = true;
@@ -71,7 +68,7 @@ pub fn construct_from_text(
                     &mut str_preproc,
                     &mut pre_proccess_cmds,
                     &mut instructions,
-                    line_number,
+                    line_number
                 )?;
                 pre_proccess = false;
                 line_start = true;
@@ -112,7 +109,7 @@ pub fn construct_from_text(
         &mut str_preproc,
         &mut pre_proccess_cmds,
         &mut instructions,
-        line_number,
+        line_number
     )?;
 
     apply_preprocess_cmds(&mut vm, &pre_proccess_cmds)?;
@@ -124,7 +121,7 @@ fn push_current_token(
     cur: &mut String,
     pre_proccess: bool,
     str_line: &mut Vec<String>,
-    str_preproc: &mut Vec<String>,
+    str_preproc: &mut Vec<String>
 ) {
     if cur.is_empty() {
         return;
@@ -144,17 +141,18 @@ fn finalize_line(
     str_preproc: &mut Vec<String>,
     pre_proccess_cmds: &mut Vec<PreProcesses>,
     instructions: &mut Vec<Instruction>,
-    line_number: usize,
+    line_number: usize
 ) -> Result<(), BuildError> {
     if pre_proccess {
         if !str_preproc.is_empty() {
-            parse_preprocess_line(str_preproc, pre_proccess_cmds, line_number)
-                .map_err(|err| err.at_line(line_number))?;
+            parse_preprocess_line(str_preproc, pre_proccess_cmds, line_number).map_err(|err|
+                err.at_line(line_number)
+            )?;
         }
         instructions.push(Instruction::Pass);
     } else if !str_line.is_empty() {
         instructions.push(
-            instruction_from_string(str_line).map_err(|err| err.at_line(line_number))?,
+            instruction_from_string(str_line).map_err(|err| err.at_line(line_number))?
         );
     }
 
@@ -166,25 +164,14 @@ fn finalize_line(
 fn parse_preprocess_line(
     str_preproc: &Vec<String>,
     pre_proccess_cmds: &mut Vec<PreProcesses>,
-    line_number: usize,
+    line_number: usize
 ) -> Result<(), BuildError> {
-    let cmd = str_preproc
-        .get(0)
-        .ok_or(BuildError::InvalidOrMissingParameter)?
-        .as_str();
+    let cmd = str_preproc.get(0).ok_or(BuildError::InvalidOrMissingParameter)?.as_str();
 
     match cmd {
         "string" => {
-            let name = str_preproc
-                .get(1)
-                .ok_or(BuildError::InvalidOrMissingParameter)?
-                .clone();
-            let raw = str_preproc
-                .iter()
-                .skip(2)
-                .cloned()
-                .collect::<Vec<String>>()
-                .join(" ");
+            let name = str_preproc.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.clone();
+            let raw = str_preproc.iter().skip(2).cloned().collect::<Vec<String>>().join(" ");
             if raw.is_empty() {
                 return Err(BuildError::InvalidOrMissingParameter);
             }
@@ -202,16 +189,8 @@ fn parse_preprocess_line(
             Ok(())
         }
         "buff" => {
-            let name = str_preproc
-                .get(1)
-                .ok_or(BuildError::InvalidOrMissingParameter)?
-                .clone();
-            let values = str_preproc
-                .iter()
-                .skip(2)
-                .cloned()
-                .collect::<Vec<String>>()
-                .join(" ");
+            let name = str_preproc.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.clone();
+            let values = str_preproc.iter().skip(2).cloned().collect::<Vec<String>>().join(" ");
             if values.is_empty() {
                 return Err(BuildError::InvalidOrMissingParameter);
             }
@@ -224,10 +203,7 @@ fn parse_preprocess_line(
             Ok(())
         }
         "label" => {
-            let name = str_preproc
-                .get(1)
-                .ok_or(BuildError::InvalidOrMissingParameter)?
-                .clone();
+            let name = str_preproc.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.clone();
             let hash = hash_string_vm(&name);
             pre_proccess_cmds.push(PreProcesses::Label {
                 hash,
@@ -239,7 +215,10 @@ fn parse_preprocess_line(
     }
 }
 
-fn apply_preprocess_cmds(vm: &mut VM, pre_proccess_cmds: &Vec<PreProcesses>) -> Result<(), BuildError> {
+fn apply_preprocess_cmds(
+    vm: &mut VM,
+    pre_proccess_cmds: &Vec<PreProcesses>
+) -> Result<(), BuildError> {
     for cmd in pre_proccess_cmds {
         match cmd {
             PreProcesses::MemString { name, value, .. } => {
@@ -253,7 +232,7 @@ fn apply_preprocess_cmds(vm: &mut VM, pre_proccess_cmds: &Vec<PreProcesses>) -> 
                 vm.vi_ram.insert(hash_string_vm(name), buff);
             }
             PreProcesses::Label { hash, line } => {
-                vm.label_indexs.insert(*hash,*line);
+                vm.label_indexs.insert(*hash, *line);
             }
         }
     }
@@ -272,14 +251,14 @@ fn parse_blob_number(token: &str) -> Result<u8, BuildError> {
     }
 
     if t.contains('.') {
-        let value :f64= t.parse::<f64>().map_err(|_| BuildError::InvalidParameter)?;
+        let value: f64 = t.parse::<f64>().map_err(|_| BuildError::InvalidParameter)?;
         if !(0.0..=255.0).contains(&value) {
             return Err(BuildError::InvalidParameter);
         }
         return Ok(value as u8);
     }
 
-    let value:i64 = t.parse::<i64>().map_err(|_| BuildError::InvalidParameter)?;
+    let value: i64 = t.parse::<i64>().map_err(|_| BuildError::InvalidParameter)?;
     if !(0..=255).contains(&value) {
         return Err(BuildError::InvalidParameter);
     }
@@ -288,284 +267,780 @@ fn parse_blob_number(token: &str) -> Result<u8, BuildError> {
 
 fn instruction_from_string(str: &Vec<String>) -> Result<Instruction, BuildError> {
     match str.get(0).ok_or(BuildError::UnkownInstruction)?.as_str() {
-        "read" => Ok(Instruction::Read(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "write" => Ok(Instruction::Write(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "check" => Ok(Instruction::Check(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "alloc" => Ok(Instruction::Alloc(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "realloc" => Ok(Instruction::Realloc(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "free" => Ok(Instruction::Free(resolve_param(
-            str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?,
-        )?)),
-        "vlen" => Ok(Instruction::Vlen(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "readw" | "oread" => Ok(Instruction::ReadW(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "writew" | "owrite" => Ok(Instruction::WriteW(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
+        "read" =>
+            Ok(
+                Instruction::Read(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "write" =>
+            Ok(
+                Instruction::Write(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "check" =>
+            Ok(
+                Instruction::Check(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "alloc" =>
+            Ok(
+                Instruction::Alloc(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "realloc" =>
+            Ok(
+                Instruction::Realloc(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "free" =>
+            Ok(
+                Instruction::Free(
+                    resolve_param(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?)?
+                )
+            ),
+        "vlen" =>
+            Ok(
+                Instruction::Vlen(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "readw" | "oread" =>
+            Ok(
+                Instruction::ReadW(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "writew" | "owrite" =>
+            Ok(
+                Instruction::WriteW(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
 
-        "palloc" => Ok(Instruction::Palloc(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "prealloc" => Ok(Instruction::Prealloc(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "pfree" => Ok(Instruction::Pfree(resolve_param(
-            str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?,
-        )?)),
-        "pcheck" => Ok(Instruction::Pcheck(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "pread" => Ok(Instruction::Pread(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "pwrite" => Ok(Instruction::Pwrite(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "preadw" => Ok(Instruction::PreadW(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "pwritew" => Ok(Instruction::PwriteW(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "pvlen" => Ok(Instruction::Pvlen(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "powner" => Ok(Instruction::Powner(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
+        "palloc" =>
+            Ok(
+                Instruction::Palloc(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "prealloc" =>
+            Ok(
+                Instruction::Prealloc(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "pfree" =>
+            Ok(
+                Instruction::Pfree(
+                    resolve_param(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?)?
+                )
+            ),
+        "pcheck" =>
+            Ok(
+                Instruction::Pcheck(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "pread" =>
+            Ok(
+                Instruction::Pread(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "pwrite" =>
+            Ok(
+                Instruction::Pwrite(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "preadw" =>
+            Ok(
+                Instruction::PreadW(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "pwritew" =>
+            Ok(
+                Instruction::PwriteW(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "pvlen" =>
+            Ok(
+                Instruction::Pvlen(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "powner" =>
+            Ok(
+                Instruction::Powner(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
 
-        "add" => Ok(Instruction::Add(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "sub" => Ok(Instruction::Sub(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "mult" => Ok(Instruction::Mult(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "div" => Ok(Instruction::Div(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "mod" => Ok(Instruction::Mod(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "lshift" => Ok(Instruction::Lshift(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "rshift" => Ok(Instruction::Rshift(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "sqrt" => Ok(Instruction::Sqrt(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
+        "add" =>
+            Ok(
+                Instruction::Add(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "sub" =>
+            Ok(
+                Instruction::Sub(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "mult" =>
+            Ok(
+                Instruction::Mult(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "div" =>
+            Ok(
+                Instruction::Div(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "mod" =>
+            Ok(
+                Instruction::Mod(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "lshift" =>
+            Ok(
+                Instruction::Lshift(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "rshift" =>
+            Ok(
+                Instruction::Rshift(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "sqrt" =>
+            Ok(
+                Instruction::Sqrt(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
 
-        "fadd" => Ok(Instruction::Fadd(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "fsub" => Ok(Instruction::Fsub(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "fmult" => Ok(Instruction::Fmult(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "fdiv" => Ok(Instruction::Fdiv(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "fmod" => Ok(Instruction::Fmod(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "fsqrt" => Ok(Instruction::Fsqrt(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "finv" => Ok(Instruction::Finv(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
+        "fadd" =>
+            Ok(
+                Instruction::Fadd(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "fsub" =>
+            Ok(
+                Instruction::Fsub(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "fmult" =>
+            Ok(
+                Instruction::Fmult(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "fdiv" =>
+            Ok(
+                Instruction::Fdiv(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "fmod" =>
+            Ok(
+                Instruction::Fmod(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "fsqrt" =>
+            Ok(
+                Instruction::Fsqrt(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "finv" =>
+            Ok(
+                Instruction::Finv(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
 
-        "eq" => Ok(Instruction::Eq(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "neq" => Ok(Instruction::Neq(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "lt" => Ok(Instruction::Lt(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "gt" => Ok(Instruction::Gt(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "lte" => Ok(Instruction::Lte(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "gte" => Ok(Instruction::Gte(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "and" => Ok(Instruction::And(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "or" => Ok(Instruction::Or(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "xor" => Ok(Instruction::Xor(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "not" => Ok(Instruction::Not(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
+        "eq" =>
+            Ok(
+                Instruction::Eq(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "neq" =>
+            Ok(
+                Instruction::Neq(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "lt" =>
+            Ok(
+                Instruction::Lt(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "gt" =>
+            Ok(
+                Instruction::Gt(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "lte" =>
+            Ok(
+                Instruction::Lte(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "gte" =>
+            Ok(
+                Instruction::Gte(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "and" =>
+            Ok(
+                Instruction::And(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "or" =>
+            Ok(
+                Instruction::Or(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "xor" =>
+            Ok(
+                Instruction::Xor(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "not" =>
+            Ok(
+                Instruction::Not(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
 
-        "feq" => Ok(Instruction::Feq(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "fneq" => Ok(Instruction::Fneq(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "flt" => Ok(Instruction::Flt(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "fgt" => Ok(Instruction::Fgt(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "flte" => Ok(Instruction::Flte(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "fgte" => Ok(Instruction::Fgte(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
+        "feq" =>
+            Ok(
+                Instruction::Feq(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "fneq" =>
+            Ok(
+                Instruction::Fneq(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "flt" =>
+            Ok(
+                Instruction::Flt(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "fgt" =>
+            Ok(
+                Instruction::Fgt(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "flte" =>
+            Ok(
+                Instruction::Flte(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "fgte" =>
+            Ok(
+                Instruction::Fgte(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
 
-        "jmp" => Ok(Instruction::Jmp(resolve_param_u64_or_hash(
-            str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?,
-        )?)),
-        "jif" => Ok(Instruction::Jif(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param_u64_or_hash(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "jnif" => Ok(Instruction::Jnif(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param_u64_or_hash(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "call" => Ok(Instruction::Call(resolve_param_u64_or_hash(
-            str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?,
-        )?)),
+        "jmp" =>
+            Ok(
+                Instruction::Jmp(
+                    resolve_param_u64_or_hash(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?
+                    )?
+                )
+            ),
+        "jif" =>
+            Ok(
+                Instruction::Jif(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param_u64_or_hash(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "jnif" =>
+            Ok(
+                Instruction::Jnif(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param_u64_or_hash(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "call" =>
+            Ok(
+                Instruction::Call(
+                    resolve_param_u64_or_hash(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?
+                    )?
+                )
+            ),
         "ret" => Ok(Instruction::Ret),
-        "ecall" => Ok(Instruction::Ecall(
-            resolve_param_u64_or_hash(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param_u64_or_hash(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "push" => Ok(Instruction::Push(resolve_param(
-            str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?,
-        )?)),
-        "pop" => Ok(Instruction::Pop(resolve_param_reg(
-            str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?,
-        )?)),
+        "ecall" =>
+            Ok(
+                Instruction::Ecall(
+                    resolve_param_u64_or_hash(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param_u64_or_hash(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "push" =>
+            Ok(
+                Instruction::Push(
+                    resolve_param(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?)?
+                )
+            ),
+        "pop" =>
+            Ok(
+                Instruction::Pop(
+                    resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?)?
+                )
+            ),
 
-        "mov" => Ok(Instruction::Mov(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "itof" => Ok(Instruction::Itof(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param_reg(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "ftoi" => Ok(Instruction::Ftoi(
-            resolve_param_reg(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param_reg(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "syscallh" => Ok(Instruction::SyscallH(
-            resolve_param_u64_or_hash(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
-        "syscall1" => Ok(Instruction::Syscall1(
-            resolve_param_u64_or_hash(str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-            resolve_param(str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str())?,
-        )),
+        "mov" =>
+            Ok(
+                Instruction::Mov(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "itof" =>
+            Ok(
+                Instruction::Itof(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param_reg(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "ftoi" =>
+            Ok(
+                Instruction::Ftoi(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param_reg(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "syscallh" =>
+            Ok(
+                Instruction::SyscallH(
+                    resolve_param_u64_or_hash(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+        "syscall1" =>
+            Ok(
+                Instruction::Syscall1(
+                    resolve_param_u64_or_hash(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
         "" => Ok(Instruction::Pass),
+
+        "halt" => Ok(Instruction::Halt),
+        "panic" =>
+            Ok(
+                Instruction::Panic(
+                    resolve_param_u64_or_hash(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+
+        "assert" =>
+            Ok(
+                Instruction::Assert(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param_u64_or_hash(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param(
+                        str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
 
         _ => Err(BuildError::UnkownInstruction),
     }
@@ -603,9 +1078,7 @@ fn resolve_param(param: &str) -> Result<InstrParam, BuildError> {
     }
 
     if let Some(reg) = p.strip_prefix('r') {
-        let reg_id = reg
-            .parse::<u8>()
-            .map_err(|_| BuildError::InvalidParameter)?;
+        let reg_id = reg.parse::<u8>().map_err(|_| BuildError::InvalidParameter)?;
         return Ok(InstrParam::Register(reg_id));
     }
 
@@ -636,9 +1109,7 @@ fn resolve_param_reg(param: &str) -> Result<u8, BuildError> {
     }
 
     if let Some(reg) = p.strip_prefix('r') {
-        let reg_id = reg
-            .parse::<u8>()
-            .map_err(|_| BuildError::InvalidParameter)?;
+        let reg_id = reg.parse::<u8>().map_err(|_| BuildError::InvalidParameter)?;
         return Ok(reg_id);
     }
 
@@ -709,6 +1180,3 @@ mod tests {
         assert_eq!(bytes, &vec![0x41, 66, 67]);
     }
 }
-
-
-

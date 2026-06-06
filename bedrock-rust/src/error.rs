@@ -9,6 +9,8 @@ pub enum RuntimeError {
     EmptyStack,
     CallStackOverflow,
     StackOverflow,
+
+    Panic(u64, String),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

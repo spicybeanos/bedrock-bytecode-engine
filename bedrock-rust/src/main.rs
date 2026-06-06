@@ -85,17 +85,18 @@ fn build_error_name(kind: error::BuildErrorKind) -> &'static str {
     }
 }
 
-fn runtime_error_name(err: &error::RuntimeError) -> &'static str {
+fn runtime_error_name(err: &error::RuntimeError) -> String {
     match err {
-        error::RuntimeError::UnkownSyscallHash => "unknown syscall hash",
-        error::RuntimeError::InvalidAddress => "invalid address",
-        error::RuntimeError::OutOfBounds => "out of bounds",
-        error::RuntimeError::NotOwnerOfBuffer => "not owner of buffer",
-        error::RuntimeError::InvalidJumpHash => "invalid jump label hash",
-        error::RuntimeError::EmptyCallStack => "Empty call stack",
-        error::RuntimeError::EmptyStack => "Empty stack",
-        error::RuntimeError::CallStackOverflow => "call stack overflow",
-        error::RuntimeError::StackOverflow => "stack overflow",
+        error::RuntimeError::UnkownSyscallHash => "unknown syscall hash".to_owned(),
+        error::RuntimeError::InvalidAddress => "invalid address".to_owned(),
+        error::RuntimeError::OutOfBounds => "out of bounds".to_owned(),
+        error::RuntimeError::NotOwnerOfBuffer => "not owner of buffer".to_owned(),
+        error::RuntimeError::InvalidJumpHash => "invalid jump label hash".to_owned(),
+        error::RuntimeError::EmptyCallStack => "Empty call stack".to_owned(),
+        error::RuntimeError::EmptyStack => "Empty stack".to_owned(),
+        error::RuntimeError::CallStackOverflow => "call stack overflow".to_owned(),
+        error::RuntimeError::StackOverflow => "stack overflow".to_owned(),
+        error::RuntimeError::Panic(code,msg ) => format!("panicked <{}>: {}", code, msg),
     }
 }
 

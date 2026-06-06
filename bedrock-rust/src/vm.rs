@@ -1,7 +1,8 @@
-use crate::error::{BuildErrorKind, RuntimeError};
-use crate::vm_state::{self, VMState};
+use crate::error::{ BuildErrorKind, RuntimeError };
+use crate::utils::read_string;
+use crate::vm_state::{ self, VMState };
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
+use std::collections::{ HashMap, HashSet };
 use std::rc::Rc;
 
 #[derive(Clone, Copy)]
@@ -90,6 +91,10 @@ pub enum Instruction {
     Ftoi(u8, u8),
     SyscallH(u64, InstrParam, InstrParam),
     Syscall1(u64, InstrParam, InstrParam),
+
+    Halt,
+    Panic(u64, InstrParam),
+    Assert(u8, u64, InstrParam),
 }
 
 pub struct PVramEntry {
@@ -98,12 +103,12 @@ pub struct PVramEntry {
 }
 
 pub struct VM {
-    pub id: u64,                       // Unique Mod ID
-    pub reg: [u64; 256],               // 64-bit registers
-    pub pc: usize,                     // Program Counter
+    pub id: u64, // Unique Mod ID
+    pub reg: [u64; 256], // 64-bit registers
+    pub pc: usize, // Program Counter
     pub vi_ram: HashMap<u64, Vec<u8>>, // Private memory
     pub label_indexs: HashMap<u64, usize>, // label hash to pc
-    pub stack: Vec<u64>,      // Data stack
+    pub stack: Vec<u64>, // Data stack
     pub call_stack: Vec<usize>, // Return addresses
     pub global: Rc<RefCell<GlobalState>>,
     pub state: VMState,
@@ -111,20 +116,22 @@ pub struct VM {
 }
 
 pub struct GlobalState {
-    pub next_global_handle: u64,                     // For generating unique handles for global memory
-    pub p_vram: HashMap<u64, PVramEntry>,            // Shared memory
+    pub next_global_handle: u64, // For generating unique handles for global memory
+    pub p_vram: HashMap<u64, PVramEntry>, // Shared memory
     // pub attendance: HashMap<u64, HashMap<u64, u64>>, // [ModHash][FuncHash] -> PC
     pub vm_ids: HashSet<u64>, // Set of all active VM IDs
 }
 
 impl GlobalState {
     pub fn new_shared() -> Rc<RefCell<GlobalState>> {
-        Rc::new(RefCell::new(GlobalState {
-            next_global_handle: 1,
-            p_vram: HashMap::new(),
-            // attendance: HashMap::new(),
-            vm_ids: HashSet::new(),
-        }))
+        Rc::new(
+            RefCell::new(GlobalState {
+                next_global_handle: 1,
+                p_vram: HashMap::new(),
+                // attendance: HashMap::new(),
+                vm_ids: HashSet::new(),
+            })
+        )
     }
 }
 
@@ -154,6 +161,17 @@ impl VM {
         let len = instr.len();
 
         while self.pc < len {
+            match &self.state {
+                VMState::Running => (),
+                VMState::Halted => {
+                    return Ok(0);
+                }
+                VMState::Panicked(ref code, msg) => {
+                    println!("VM Panicked <{}>: {}", code, &msg);
+                    let m = msg.to_owned();
+                    return Err(RuntimeError::Panic(*code, m));
+                }
+            }
             self.execute(instr)?;
         }
 
@@ -239,6 +257,49 @@ impl VM {
 
             Instruction::Pass => Ok(0),
 
+            Instruction::Halt => {
+                self.state = VMState::Halted;
+                Ok(0)
+            }
+            Instruction::Panic(code, msg) => {
+                let m_addr = self.resolve_param(msg);
+                let mut message: String = "<no message provided>".to_string();
+                if m_addr != 0 {
+                    let opp_m_buff = self.vi_ram.get(&m_addr);
+                    match opp_m_buff {
+                        Some(buff) => {
+                            message = read_string(buff, 0, buff.len());
+                        }
+                        None => {
+                            message = format!("<invalid message address: {}>", m_addr);
+                        }
+                    }
+                }
+
+                self.state = VMState::Panicked(*code, message);
+                Ok(0)
+            }
+            Instruction::Assert(reg, code, msg) => {
+                let val = self.reg[*reg as usize];
+                if val == 0 {
+                    let m_addr = self.resolve_param(msg);
+                    let mut m_text: String = "<no message provided>".to_string();
+                    if m_addr != 0 {
+                        let opp_m_buff = self.vi_ram.get(&m_addr);
+                        match opp_m_buff {
+                            Some(buff) => {
+                                m_text = read_string(buff, 0, buff.len());
+                            }
+                            None => {
+                                m_text = format!("<invalid message address: {}>", m_addr);
+                            }
+                        }
+                    }
+
+                    self.state = VMState::Panicked(*code, format!("Assertion failed at reg {}: {}", *reg, m_text));
+                }
+                Ok(0)
+            }
             _ => Ok(0),
         }
     }
