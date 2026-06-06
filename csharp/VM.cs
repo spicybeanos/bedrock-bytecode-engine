@@ -18,32 +18,6 @@ namespace BedrockBytecodeEngine
         }
     }
 
-    public class GlobalState
-    {
-        private static GlobalState _instance;
-        public static GlobalState Instance
-        {
-            get
-            {
-                if (_instance == null)
-                    _instance = new GlobalState();
-                return _instance;
-            }
-            set
-            {
-                _instance = value;
-            }
-
-        }
-        internal ulong nextGlobalHandle = 1;
-        public Dictionary<ulong, PVramEntry> PVram { get; } = new Dictionary<ulong, PVramEntry>();
-        public HashSet<ulong> vm_ids { get; set; } = new HashSet<ulong>();
-
-        public static void NewShared()
-        {
-            Instance = new GlobalState();
-        }
-    }
 
     public class VM
     {
@@ -58,7 +32,7 @@ namespace BedrockBytecodeEngine
         public Dictionary<ulong, int> LabelIndexs { get; } = new Dictionary<ulong, int>();
         public Stack<ulong> Stack { get; } = new Stack<ulong>();
         public Stack<int> CallStack { get; } = new Stack<int>();
-        // public GlobalState Global { get; }
+        public GlobalState Global { get; }
 
         public VM(ulong id)
         {
@@ -67,7 +41,18 @@ namespace BedrockBytecodeEngine
             Id = id;
             Reg = new ulong[MaxRegisters];
             Pc = 0;
-            GlobalState.Instance.vm_ids.Add(id);
+            Global = GlobalState.Instance;
+            Global.vm_ids.Add(id);
+        }
+        public VM(ulong id,GlobalState global)
+        {
+            if (global.vm_ids.Contains(id))
+                throw new BuildErrorException(BuildErrorKind.DuplicateVMId);
+            Id = id;
+            Reg = new ulong[MaxRegisters];
+            Pc = 0;
+            Global = global;
+            Global.vm_ids.Add(id);
         }
 
         public ulong Run(List<Instruction> instructions, int start)
@@ -253,10 +238,10 @@ namespace BedrockBytecodeEngine
                     Memory.pwritew(pwritew.Reg, this, Reg, pwritew.Addr, pwritew.K);
                     break;
                 case Pvlen pvlen:
-                    Memory.pvlen(pvlen.Reg, pvlen.Loc, Reg);
+                    Memory.pvlen(pvlen.Reg, this, pvlen.Loc, Reg);
                     break;
                 case Powner powner:
-                    Memory.powner(powner.Reg, powner.Loc, Reg);
+                    Memory.powner(powner.Reg, this, powner.Loc, Reg);
                     break;
 
                 // Control Flow

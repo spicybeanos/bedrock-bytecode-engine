@@ -126,8 +126,8 @@ namespace BedrockBytecodeEngine
         internal static void palloc(byte r,VM vm,ulong[] Reg, InstrParam sizeP)
         {
             ulong size = VM.ResolveParam_reg(sizeP, Reg);
-            ulong handle = Utils.HashU64Vm(GlobalState.Instance.nextGlobalHandle++);
-            GlobalState.Instance.PVram[handle] = new PVramEntry(vm.Id, new byte[size]);
+            ulong handle = Utils.HashU64Vm(vm.Global.nextGlobalHandle++);
+            vm.Global.PVram[handle] = new PVramEntry(vm.Id, new byte[size]);
             Reg[r] = handle;
         }
 
@@ -136,7 +136,7 @@ namespace BedrockBytecodeEngine
             ulong handle = Reg[r];
             ulong newSize = VM.ResolveParam_reg(sizeP, Reg);
 
-            if (!GlobalState.Instance.PVram.TryGetValue(handle, out PVramEntry entry))
+            if (!vm.Global.PVram.TryGetValue(handle, out PVramEntry entry))
                 throw new RuntimeErrorException(RuntimeError.InvalidAddress);
 
             if (entry.OwnerId != vm.Id)
@@ -150,13 +150,13 @@ namespace BedrockBytecodeEngine
         internal static void pfree(InstrParam addrP,VM vm, ulong[] Reg)
         {
             ulong addr = VM.ResolveParam_reg(addrP, Reg);
-            if (!GlobalState.Instance.PVram.TryGetValue(addr, out PVramEntry entry))
+            if (!vm.Global.PVram.TryGetValue(addr, out PVramEntry entry))
                 throw new RuntimeErrorException(RuntimeError.InvalidAddress);
 
             if (entry.OwnerId != vm.Id)
                 throw new RuntimeErrorException(RuntimeError.NotOwnerOfBuffer);
 
-            GlobalState.Instance.PVram.Remove(addr);
+            vm.Global.PVram.Remove(addr);
         }
 
         internal static void pcheck(byte r,VM vm,ulong[] Reg, InstrParam addrP, InstrParam kP)
@@ -164,7 +164,7 @@ namespace BedrockBytecodeEngine
             ulong addr = VM.ResolveParam_reg(addrP, Reg);
             int k = (int)VM.ResolveParam_reg(kP, Reg);
 
-            if (!GlobalState.Instance.PVram.TryGetValue(addr, out PVramEntry entry))
+            if (!vm.Global.PVram.TryGetValue(addr, out PVramEntry entry))
             {
                 Reg[r] = 0;
                 return;
@@ -185,7 +185,7 @@ namespace BedrockBytecodeEngine
             ulong addr = VM.ResolveParam_reg(addrP, Reg);
             int k = (int)VM.ResolveParam_reg(kP, Reg);
 
-            if (!GlobalState.Instance.PVram.TryGetValue(addr, out PVramEntry entry))
+            if (!vm.Global.PVram.TryGetValue(addr, out PVramEntry entry))
                 throw new RuntimeErrorException(RuntimeError.InvalidAddress);
             if (k >= entry.Data.Length)
                 throw new RuntimeErrorException(RuntimeError.OutOfBounds);
@@ -198,7 +198,7 @@ namespace BedrockBytecodeEngine
             ulong addr = VM.ResolveParam_reg(addrP, Reg);
             int k = (int)VM.ResolveParam_reg(kP, Reg);
 
-            if (!GlobalState.Instance.PVram.TryGetValue(addr, out PVramEntry entry))
+            if (!vm.Global.PVram.TryGetValue(addr, out PVramEntry entry))
                 throw new RuntimeErrorException(RuntimeError.InvalidAddress);
             if (entry.OwnerId != vm.Id)
                 throw new RuntimeErrorException(RuntimeError.NotOwnerOfBuffer);
@@ -212,7 +212,7 @@ namespace BedrockBytecodeEngine
             ulong addr = VM.ResolveParam_reg(addrP, Reg);
             int k = (int)VM.ResolveParam_reg(kP, Reg);
 
-            if (!GlobalState.Instance.PVram.TryGetValue(addr, out PVramEntry entry))
+            if (!vm.Global.PVram.TryGetValue(addr, out PVramEntry entry))
                 throw new RuntimeErrorException(RuntimeError.InvalidAddress);
             if (k + 8 > entry.Data.Length)
                 throw new RuntimeErrorException(RuntimeError.OutOfBounds);
@@ -225,7 +225,7 @@ namespace BedrockBytecodeEngine
             ulong addr = VM.ResolveParam_reg(addrP, Reg);
             int k = (int)VM.ResolveParam_reg(kP, Reg);
 
-            if (!GlobalState.Instance.PVram.TryGetValue(addr, out PVramEntry entry))
+            if (!vm.Global.PVram.TryGetValue(addr, out PVramEntry entry))
                 throw new RuntimeErrorException(RuntimeError.InvalidAddress);
             if (entry.OwnerId != vm.Id)
                 throw new RuntimeErrorException(RuntimeError.NotOwnerOfBuffer);
@@ -236,10 +236,10 @@ namespace BedrockBytecodeEngine
             Array.Copy(valBytes, 0, entry.Data, k, 8);
         }
 
-        internal static void pvlen(byte r, InstrParam locP,ulong[] Reg)
+        internal static void pvlen(byte r,VM vm, InstrParam locP,ulong[] Reg)
         {
             ulong loc = VM.ResolveParam_reg(locP, Reg);
-            if (!GlobalState.Instance.PVram.TryGetValue(loc, out PVramEntry entry))
+            if (!vm.Global.PVram.TryGetValue(loc, out PVramEntry entry))
             {
                 Reg[r] = 0;
                 return;
@@ -248,10 +248,10 @@ namespace BedrockBytecodeEngine
             Reg[r] = (ulong)entry.Data.Length;
         }
 
-        internal static void powner(byte r, InstrParam locP,ulong[] Reg)
+        internal static void powner(byte r,VM vm, InstrParam locP,ulong[] Reg)
         {
             ulong loc = VM.ResolveParam_reg(locP, Reg);
-            if (!GlobalState.Instance.PVram.TryGetValue(loc, out PVramEntry entry))
+            if (!vm.Global.PVram.TryGetValue(loc, out PVramEntry entry))
                 throw new RuntimeErrorException(RuntimeError.InvalidAddress);
             Reg[r] = entry.OwnerId;
         }
