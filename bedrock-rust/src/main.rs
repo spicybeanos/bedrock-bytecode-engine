@@ -10,6 +10,7 @@ mod math;
 mod memory;
 mod syscall;
 mod test;
+mod vm_state;
 
 fn dump_first_10_registers(vm: &vm::VM) {
     println!("register dump (r0-r9):");

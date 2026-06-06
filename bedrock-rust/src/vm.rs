@@ -1,4 +1,5 @@
 use crate::error::{BuildErrorKind, RuntimeError};
+use crate::vm_state::{self, VMState};
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
@@ -105,6 +106,7 @@ pub struct VM {
     pub stack: Vec<u64>,      // Data stack
     pub call_stack: Vec<usize>, // Return addresses
     pub global: Rc<RefCell<GlobalState>>,
+    pub state: VMState,
     pub next_handle: u64, // For generating unique handles for private memory
 }
 
@@ -144,6 +146,7 @@ impl VM {
             call_stack: Vec::new(),
             global,
             next_handle: 1,
+            state: vm_state::VMState::Running,
         })
     }
     pub fn run(&mut self, instr: &Vec<Instruction>, start: usize) -> Result<u64, RuntimeError> {
