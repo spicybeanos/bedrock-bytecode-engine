@@ -1,5 +1,6 @@
 :string test "ABCD"
 alloc r1 8
 mov r2 0x234ABC
+mov r3 .test
 panic 100 .test
 writew r2 r1 0

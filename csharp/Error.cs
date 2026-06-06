@@ -22,7 +22,8 @@ namespace BedrockBytecodeEngine
         EmptyCallStack,
         EmptyStack,
         CallStackOverflow,
-        StackOverflow
+        StackOverflow,
+        Panicked
     }
 
     public class BuildErrorException : Exception
@@ -73,7 +74,21 @@ namespace BedrockBytecodeEngine
                 RuntimeError.EmptyStack => "empty stack",
                 RuntimeError.CallStackOverflow => "call stack overflow",
                 RuntimeError.StackOverflow => "stack overflow",
+                RuntimeError.Panicked => "panicked",
                 _ => "unknown error"
             };
+    }
+
+    public class PanickedRuntimeException : RuntimeErrorException
+    {
+        public string ErrorMessage { get; }
+        public ulong ErrorCode {get;}
+
+        public PanickedRuntimeException(string message, ulong errorCode)
+            : base(RuntimeError.Panicked)
+        {
+            ErrorMessage = message;
+            ErrorCode = errorCode;
+        }
     }
 }

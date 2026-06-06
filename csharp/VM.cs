@@ -72,8 +72,8 @@ namespace BedrockBytecodeEngine
                     case Halted _:
                         return 0;
                     case Panicked panic:
-                        Console.WriteLine($"VM Panicked: {panic.ErrorMessage}");
-                        return panic.ErrorCode;
+                        Console.WriteLine($"VM Panicked <{panic.ErrorCode}>: {panic.ErrorMessage}");
+                        throw new PanickedRuntimeException(panic.ErrorMessage, panic.ErrorCode);
                 }
                 Execute(instructions);
             }

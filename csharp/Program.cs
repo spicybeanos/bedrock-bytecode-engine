@@ -64,7 +64,7 @@ namespace BedrockBytecodeEngine
             }
             catch (RuntimeErrorException ex)
             {
-                Console.WriteLine($"runtime error: {RuntimeErrorName(ex.Error)}");
+                Console.WriteLine($"runtime error: {RuntimeErrorName(ex)}");
             }
 
             DumpFirst10Registers(vm);
@@ -173,7 +173,7 @@ namespace BedrockBytecodeEngine
             foreach (string f in fxns)
             {
                 ulong h = Utils.HashStringVm(f);
-                Console.WriteLine($"{f} -> {h} ({h:X})");
+                Console.WriteLine($"{f} \t->\t {h} \t({h:X})");
             }
         }
 
@@ -208,9 +208,9 @@ namespace BedrockBytecodeEngine
             };
         }
 
-        static string RuntimeErrorName(RuntimeError error)
+        static string RuntimeErrorName(RuntimeErrorException error)
         {
-            return error switch
+            return error.Error switch
             {
                 RuntimeError.UnknownSyscallHash => "unknown syscall hash",
                 RuntimeError.InvalidAddress => "invalid address",
@@ -221,6 +221,7 @@ namespace BedrockBytecodeEngine
                 RuntimeError.EmptyStack => "empty stack",
                 RuntimeError.CallStackOverflow => "call stack overflow",
                 RuntimeError.StackOverflow => "stack overflow",
+                RuntimeError.Panicked => $"panicked <{(error as PanickedRuntimeException).ErrorCode}>: {(error as PanickedRuntimeException).ErrorMessage}",
                 _ => "unknown error"
             };
         }
