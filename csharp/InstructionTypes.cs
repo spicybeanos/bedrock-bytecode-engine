@@ -83,6 +83,31 @@ namespace BedrockBytecodeEngine
         }
     }
 
+    public class Halt : Instruction { }
+    public class Panic : Instruction
+    {
+        public ulong Code { get; }
+        public InstrParam Message { get; }
+        public Panic(ulong code, InstrParam message)
+        {
+            Code = code;
+            Message = message;
+        }
+    }
+
+    public class Assert : Instruction
+    {
+        public byte Reg { get; }
+        public ulong Code { get; }
+        public InstrParam Message { get; }
+        public Assert(byte reg, ulong code, InstrParam message)
+        {
+            Reg = reg;
+            Code = code;
+            Message = message;
+        }
+    }
+
     public class Realloc : Instruction
     {
         public byte Reg { get; }

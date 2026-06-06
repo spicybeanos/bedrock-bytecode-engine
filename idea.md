@@ -108,8 +108,8 @@ The Virtual RAM maps virtual handles to physical memory addresses. This provides
 
 These instructions tell the engine what to do with the VM instance
 1. **halt**: `halt` retires the from the execution thread. Futher instructions will not be executed and the vm just sits in memory. Instructions from other vms will continue execution.
-2. **panic**: `panic <u64 code> <message address>` retires the vm, and stops with an error. This error code and message should be shown to the user, the message address will be a ViRam address
-3. **assert**: `assert rx <u64 code> <panic message address>` retires the vm if `rx` is 0, and stops with an error. This error message should be shown to the user, the message address will be a ViRam address.
+2. **panic**: `panic <u64 code> <reg/addr/u64 message address>` retires the vm, and stops with an error. This error code and message should be shown to the user, the message address will be a ViRam address
+3. **assert**: `assert <rx> <u64 code> <reg/addr/u64 panic message address>` retires the vm if `rx` is 0, and stops with an error. This error message should be shown to the user, the message address will be a ViRam address.
 
 **Example Mapping:**
 1. `alloc r1 64`

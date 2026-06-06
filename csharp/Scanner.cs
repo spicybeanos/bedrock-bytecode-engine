@@ -695,6 +695,20 @@ namespace BedrockBytecodeEngine
                         ResolveParam(tokens.ElementAtOrDefault(3) ?? "")
                     ),
 
+                "halt"
+                    => new Halt(),
+                "panic" 
+                    => new Panic(
+                        ResolveParamU64OrHash(tokens.ElementAtOrDefault(1) ?? ""),
+                        ResolveParam(tokens.ElementAtOrDefault(2) ?? "")
+                    ),
+                "assert" 
+                    => new Assert(
+                        ResolveParamReg(tokens.ElementAtOrDefault(1) ?? ""),
+                        ResolveParamU64OrHash(tokens.ElementAtOrDefault(2) ?? ""),
+                        ResolveParam(tokens.ElementAtOrDefault(3) ?? "")
+                    ),
+
                 "" => new Pass(),
                 _ => throw new BuildErrorException(BuildErrorKind.UnknownInstruction)
             };

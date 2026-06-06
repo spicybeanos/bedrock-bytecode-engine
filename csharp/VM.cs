@@ -33,6 +33,7 @@ namespace BedrockBytecodeEngine
         public Stack<ulong> Stack { get; } = new Stack<ulong>();
         public Stack<int> CallStack { get; } = new Stack<int>();
         public GlobalState Global { get; }
+        public IVMState State { get; set; }
 
         public VM(ulong id)
         {
@@ -43,8 +44,9 @@ namespace BedrockBytecodeEngine
             Pc = 0;
             Global = GlobalState.Instance;
             Global.vm_ids.Add(id);
+            State = new Running();
         }
-        public VM(ulong id,GlobalState global)
+        public VM(ulong id, GlobalState global)
         {
             if (global.vm_ids.Contains(id))
                 throw new BuildErrorException(BuildErrorKind.DuplicateVMId);
@@ -53,6 +55,7 @@ namespace BedrockBytecodeEngine
             Pc = 0;
             Global = global;
             Global.vm_ids.Add(id);
+            State = new Running();
         }
 
         public ulong Run(List<Instruction> instructions, int start)
@@ -62,6 +65,16 @@ namespace BedrockBytecodeEngine
 
             while (Pc < len)
             {
+                switch (State)
+                {
+                    case Running _:
+                        break;
+                    case Halted _:
+                        return 0;
+                    case Panicked panic:
+                        Console.WriteLine($"VM Panicked: {panic.ErrorMessage}");
+                        return panic.ErrorCode;
+                }
                 Execute(instructions);
             }
 
@@ -274,6 +287,35 @@ namespace BedrockBytecodeEngine
                 case Syscall1 syscall1:
                     syscall1_impl(syscall1.Hash, syscall1.Arg, syscall1.Dest);
                     break;
+
+                case Halt halt:
+                    State = new Halted();
+                    break;
+                case Panic panic:
+                    var msg_addr = ResolveParam(panic.Message);
+                    string msg = "<no message provided>";
+                    if (ViRam.TryGetValue(msg_addr, out byte[] buff))
+                        msg = Encoding.UTF8.GetString(buff);
+                    else if (msg_addr != 0)
+                        msg = $"<invalid message address: {msg_addr}>";
+                    State = new Panicked(panic.Code, msg);
+                    break;
+
+                case Assert assert:
+                    {
+                        ulong val = Reg[assert.Reg];
+                        if (val == 0)
+                        {
+                            var msg_addr_ = ResolveParam(assert.Message);
+                            string msg_ = "<no message provided>";
+                            if (ViRam.TryGetValue(msg_addr_, out byte[] buff_))
+                                msg_ = Encoding.UTF8.GetString(buff_);
+                            else if (msg_addr_ != 0)
+                                msg_ = $"<invalid message address: {msg_addr_}>";
+                            State = new Panicked(1, $"Assertion Failed: {msg_}");
+                        }
+                        break;
+                    }
 
                 case Pass:
                     break;
