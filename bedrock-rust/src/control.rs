@@ -1,4 +1,5 @@
 use crate::{ error::RuntimeError, vm::{ InstrParam, VM } };
+use std::collections::HashMap;
 /*
     *Jmp(u64),
     *Jif(u8, u64),
@@ -11,13 +12,13 @@ use crate::{ error::RuntimeError, vm::{ InstrParam, VM } };
 */
 const MAX_STACK_SIZE: usize = 0x10000;
 impl VM {
-    pub fn jmp(&mut self, jmp_hash: u64) -> Result<u64, RuntimeError> {
-        let pc: usize = *self.label_indexs.get(&jmp_hash).ok_or(RuntimeError::InvalidJumpHash)?;
+    pub fn jmp(&mut self, jmp_hash: u64,label_indexs: &HashMap<u64, usize>) -> Result<u64, RuntimeError> {
+        let pc: usize = *label_indexs.get(&jmp_hash).ok_or(RuntimeError::InvalidJumpHash)?;
         self.pc = pc;
         Ok(pc as u64)
     }
-    pub fn jif(&mut self, r: u8, jmp_hash: u64) -> Result<u64, RuntimeError> {
-        let pc: usize = *self.label_indexs.get(&jmp_hash).ok_or(RuntimeError::InvalidJumpHash)?;
+    pub fn jif(&mut self, r: u8, jmp_hash: u64, label_indexs: &HashMap<u64, usize>) -> Result<u64, RuntimeError> {
+        let pc: usize = *label_indexs.get(&jmp_hash).ok_or(RuntimeError::InvalidJumpHash)?;
         let cond = self.reg[r as usize];
         if cond == 1 {
             self.pc = pc;
@@ -25,8 +26,8 @@ impl VM {
         }
         Ok(0)
     }
-    pub fn jnif(&mut self, r: u8, jmp_hash: u64) -> Result<u64, RuntimeError> {
-        let pc: usize = *self.label_indexs.get(&jmp_hash).ok_or(RuntimeError::InvalidJumpHash)?;
+    pub fn jnif(&mut self, r: u8, jmp_hash: u64, label_indexs: &HashMap<u64, usize>) -> Result<u64, RuntimeError> {
+        let pc: usize = *label_indexs.get(&jmp_hash).ok_or(RuntimeError::InvalidJumpHash)?;
         let cond = self.reg[r as usize];
         if cond != 1 {
             self.pc = pc;
@@ -34,8 +35,8 @@ impl VM {
         }
         Ok(0)
     }
-    pub fn call(&mut self, jmp_hash: u64) -> Result<u64, RuntimeError> {
-        let pc: usize = *self.label_indexs.get(&jmp_hash).ok_or(RuntimeError::InvalidJumpHash)?;
+    pub fn call(&mut self, jmp_hash: u64, label_indexs: &HashMap<u64, usize>) -> Result<u64, RuntimeError> {
+        let pc: usize = *label_indexs.get(&jmp_hash).ok_or(RuntimeError::InvalidJumpHash)?;
 
         self.call_stack.push(self.pc);
 

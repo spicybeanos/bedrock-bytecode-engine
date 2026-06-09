@@ -8,8 +8,10 @@ mod error;
 mod scanner;
 mod math;
 mod memory;
+mod engine;
 mod syscall;
 mod test;
+mod source;
 mod vm_state;
 
 fn dump_first_10_registers(vm: &vm::VM) {
@@ -101,7 +103,7 @@ fn runtime_error_name(err: &error::RuntimeError) -> String {
 }
 
 fn main() {
-    let path = match std::env::args().nth(1) {
+    let path: String = match std::env::args().nth(1) {
         Some(path) => path,
         _ => {
             test::print_hashes();
@@ -112,7 +114,7 @@ fn main() {
     let is_bdt = Path::new(&path)
         .extension()
         .and_then(|ext| ext.to_str())
-        .map(|ext| ext.eq_ignore_ascii_case("bdt"))
+        .map(|ext: &str| ext.eq_ignore_ascii_case("bdt"))
         .unwrap_or(false);
     if !is_bdt {
         println!("extension incorrect");
@@ -130,7 +132,7 @@ fn main() {
     let text = content.chars().collect::<Vec<char>>();
     let global = vm::GlobalState::new_shared();
 
-    let (mut vm, instructions) = match construct_from_text(1, global, &text) {
+    let (mut vm, instructions, label_indexs) = match construct_from_text(1, global, &text) {
         Ok(data) => data,
         Err(err) => {
             if let Some(line) = err.line() {
@@ -142,7 +144,7 @@ fn main() {
         }
     };
 
-    if let Err(err) = vm.run(&instructions, 0) {
+    if let Err(err) = vm.run(&instructions, &label_indexs, 0) {
         println!("runtime error: {}", runtime_error_name(&err));
     }
 

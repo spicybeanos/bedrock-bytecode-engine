@@ -2,6 +2,8 @@ use crate::error::BuildError;
 use crate::utils::hash_string_vm;
 use crate::vm::{ GlobalState, InstrParam, Instruction, VM };
 use std::cell::RefCell;
+use std::collections::HashMap;
+
 use std::rc::Rc;
 
 enum PreProcesses {
@@ -24,7 +26,7 @@ pub fn construct_from_text(
     id: u64,
     global: Rc<RefCell<GlobalState>>,
     text: &Vec<char>
-) -> Result<(VM, Vec<Instruction>), BuildError> {
+) -> Result<(VM, Vec<Instruction>, HashMap<u64, usize>), BuildError> {
     let mut vm = VM::new(id, global)?;
     let mut instructions = Vec::<Instruction>::new();
     let mut pre_proccess_cmds = Vec::<PreProcesses>::new();
@@ -112,9 +114,9 @@ pub fn construct_from_text(
         line_number
     )?;
 
-    apply_preprocess_cmds(&mut vm, &pre_proccess_cmds)?;
+    let label_indexs = apply_preprocess_cmds(&mut vm, &pre_proccess_cmds)?;
 
-    return Ok((vm, instructions));
+    return Ok((vm, instructions, label_indexs));
 }
 
 fn push_current_token(
@@ -218,7 +220,8 @@ fn parse_preprocess_line(
 fn apply_preprocess_cmds(
     vm: &mut VM,
     pre_proccess_cmds: &Vec<PreProcesses>
-) -> Result<(), BuildError> {
+) -> Result<HashMap<u64, usize>, BuildError> {
+    let mut label_indexs: HashMap<u64, usize> = HashMap::new();
     for cmd in pre_proccess_cmds {
         match cmd {
             PreProcesses::MemString { name, value, .. } => {
@@ -232,12 +235,12 @@ fn apply_preprocess_cmds(
                 vm.vi_ram.insert(hash_string_vm(name), buff);
             }
             PreProcesses::Label { hash, line } => {
-                vm.label_indexs.insert(*hash, *line);
+                label_indexs.insert(*hash, *line);
             }
         }
     }
 
-    Ok(())
+    Ok(label_indexs)
 }
 
 fn parse_blob_number(token: &str) -> Result<u8, BuildError> {
@@ -1126,7 +1129,7 @@ mod tests {
         let text = source.chars().collect::<Vec<char>>();
         let global = GlobalState::new_shared();
 
-        let (vm, instructions) = match construct_from_text(1, global, &text) {
+        let (vm, instructions, label_indexs) = match construct_from_text(1, global, &text) {
             Ok(v) => v,
             Err(_) => panic!("scanner should parse"),
         };
@@ -1156,7 +1159,7 @@ mod tests {
         let text = source.chars().collect::<Vec<char>>();
         let global = GlobalState::new_shared();
 
-        let (vm, instructions) = match construct_from_text(2, global, &text) {
+        let (vm, instructions, label_indexs) = match construct_from_text(2, global, &text) {
             Ok(v) => v,
             Err(_) => panic!("scanner should parse"),
         };

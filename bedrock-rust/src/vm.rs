@@ -107,7 +107,7 @@ pub struct VM {
     pub reg: [u64; 256], // 64-bit registers
     pub pc: usize, // Program Counter
     pub vi_ram: HashMap<u64, Vec<u8>>, // Private memory
-    pub label_indexs: HashMap<u64, usize>, // label hash to pc
+    // pub label_indexs: HashMap<u64, usize>, // label hash to pc
     pub stack: Vec<u64>, // Data stack
     pub call_stack: Vec<usize>, // Return addresses
     pub global: Rc<RefCell<GlobalState>>,
@@ -133,6 +133,14 @@ impl GlobalState {
             })
         )
     }
+    pub fn new() -> GlobalState {
+        GlobalState {
+            next_global_handle: 1,
+            p_vram: HashMap::new(),
+            // attendance: HashMap::new(),
+            vm_ids: HashSet::new(),
+        }
+    }
 }
 
 impl VM {
@@ -148,7 +156,7 @@ impl VM {
             pc: 0,
             id,
             vi_ram: HashMap::new(),
-            label_indexs: HashMap::new(),
+            // label_indexs: HashMap::new(),
             stack: Vec::new(),
             call_stack: Vec::new(),
             global,
@@ -156,7 +164,7 @@ impl VM {
             state: vm_state::VMState::Running,
         })
     }
-    pub fn run(&mut self, instr: &Vec<Instruction>, start: usize) -> Result<u64, RuntimeError> {
+    pub fn run(&mut self, instr: &Vec<Instruction>,label_indexs: &HashMap<u64, usize>, start: usize) -> Result<u64, RuntimeError> {
         self.pc = start;
         let len = instr.len();
 
@@ -172,12 +180,12 @@ impl VM {
                     return Err(RuntimeError::Panic(*code, m));
                 }
             }
-            self.execute(instr)?;
+            self.execute(instr, &label_indexs)?;
         }
 
         return Ok(0);
     }
-    pub fn execute(&mut self, instr: &Vec<Instruction>) -> Result<u64, RuntimeError> {
+    pub fn execute(&mut self, instr: &Vec<Instruction>, label_indexs: &HashMap<u64, usize>) -> Result<u64, RuntimeError> {
         let work = &instr[self.pc as usize];
         self.pc += 1;
         match work {
@@ -244,10 +252,10 @@ impl VM {
             Instruction::Powner(r, loc) => self.powner(*r, loc),
 
             //control flow
-            Instruction::Jmp(jmp_hash) => self.jmp(*jmp_hash),
-            Instruction::Jif(r, jmp_hash) => self.jif(*r, *jmp_hash),
-            Instruction::Jnif(r, jmp_hash) => self.jnif(*r, *jmp_hash),
-            Instruction::Call(jmp_hash) => self.call(*jmp_hash),
+            Instruction::Jmp(jmp_hash) => self.jmp(*jmp_hash, label_indexs),
+            Instruction::Jif(r, jmp_hash) => self.jif(*r, *jmp_hash, label_indexs),
+            Instruction::Jnif(r, jmp_hash) => self.jnif(*r, *jmp_hash, label_indexs),
+            Instruction::Call(jmp_hash) => self.call(*jmp_hash, label_indexs),
             Instruction::Ret => self.ret(),
             Instruction::Push(value_p) => self.push(*value_p),
             Instruction::Pop(r) => self.pop(*r),
