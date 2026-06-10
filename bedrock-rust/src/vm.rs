@@ -5,12 +5,20 @@ use std::cell::RefCell;
 use std::collections::{ HashMap, HashSet };
 use std::rc::Rc;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Eq, Hash, PartialEq,Debug)]
 pub enum InstrParam {
     Register(u8),
     Value(u64),
 }
-
+impl InstrParam {
+    pub fn opcode(&self) -> u8 {
+        match self {
+            InstrParam::Register(r) => 16,
+            InstrParam::Value(_) => 32, 
+        }
+    }
+}
+#[derive(Eq, Hash, PartialEq, Clone,Debug)]
 pub enum Instruction {
     Pass,
     // Memory (Local)
@@ -91,10 +99,195 @@ pub enum Instruction {
     Ftoi(u8, u8),
     SyscallH(u64, InstrParam, InstrParam),
     Syscall1(u64, InstrParam, InstrParam),
+    Import(u8, u64),
 
     Halt,
     Panic(u64, InstrParam),
     Assert(u8, u64, InstrParam),
+}
+// u8 -> 1
+// u64 -> 8
+// reg -> 16
+// value -> 32
+impl Instruction {
+    pub fn opcode(&self) -> u8 {
+        match self {
+            Instruction::Pass => 1,
+            // Memory (Local)
+            Instruction::Read(_, _, _) => 10,
+            Instruction::Write(_, _, _) => 11,
+            Instruction::Check(_, _, _) => 12,
+            Instruction::Alloc(_, _) => 13,
+            Instruction::Realloc(_, _) => 14,
+            Instruction::Free(_) => 15,
+            Instruction::Vlen(_, _) => 16,
+            Instruction::ReadW(_, _, _) => 17,
+            Instruction::WriteW(_, _, _) => 18,
+
+            // Memory (Global Persistent)
+            Instruction::Palloc(_, _) => 21,
+            Instruction::Prealloc(_, _) => 22,
+            Instruction::Pfree(_) => 23,
+            Instruction::Pcheck(_, _, _) => 24,
+            Instruction::Pread(_, _, _) => 25,
+            Instruction::Pwrite(_, _, _) => 26,
+            Instruction::PreadW(_, _, _) => 27,
+            Instruction::PwriteW(_, _, _) => 28,
+            Instruction::Pvlen(_, _) => 29,
+            Instruction::Powner(_, _) => 30,
+
+            // Integer Math
+            Instruction::Add(_, _) => 41,
+            Instruction::Sub(_, _) => 42,
+            Instruction::Mult(_, _) => 43,
+            Instruction::Div(_, _) => 44,
+            Instruction::Mod(_, _) => 45,
+            Instruction::Lshift(_, _) => 46,
+            Instruction::Rshift(_, _) => 47,
+            Instruction::Sqrt(_, _) => 48,
+
+            // Float Math
+            Instruction::Fadd(_, _) => 51,
+            Instruction::Fsub(_, _) => 52,
+            Instruction::Fmult(_, _) => 53,
+            Instruction::Fdiv(_, _) => 54,
+            Instruction::Fmod(_, _) => 55,
+            Instruction::Fsqrt(_, _) => 56,
+            Instruction::Finv(_, _) => 57,
+
+            // Logic & Comparison (Int)
+            Instruction::Eq(_, _, _) => 61,
+            Instruction::Neq(_, _, _) => 62,
+            Instruction::Lt(_, _, _) => 63,
+            Instruction::Gt(_, _, _) => 64,
+            Instruction::Lte(_, _, _) => 65,
+            Instruction::Gte(_, _, _) => 66,
+            Instruction::And(_, _, _) => 67,
+            Instruction::Or(_, _, _) => 68,
+            Instruction::Xor(_, _, _) => 69,
+            Instruction::Not(_, _) => 70,
+
+            // Logic & Comparison (Float)
+            Instruction::Feq(_, _, _) => 81,
+            Instruction::Fneq(_, _, _) => 82,
+            Instruction::Flt(_, _, _) => 83,
+            Instruction::Fgt(_, _, _) => 84,
+            Instruction::Flte(_, _, _) => 85,
+            Instruction::Fgte(_, _, _) => 86,
+
+            // Control Flow
+            Instruction::Jmp(_) => 91,
+            Instruction::Jif(_, _) => 92,
+            Instruction::Jnif(_, _) => 93,
+            Instruction::Call(_) => 94,
+            Instruction::Ret => 95,
+            Instruction::Ecall(_, _) => 96,
+            Instruction::Push(_) => 97,
+            Instruction::Pop(_) => 98,
+
+            // Data & System
+            Instruction::Mov(_, _) => 101,
+            Instruction::Itof(_, _) => 102,
+            Instruction::Ftoi(_, _) => 103,
+            Instruction::SyscallH(_, _, _) => 104,
+            Instruction::Syscall1(_, _, _) => 105,
+            Instruction::Import(_, _) => 106,
+
+            Instruction::Halt => 111,
+            Instruction::Panic(_, _) => 112,
+            Instruction::Assert(_, _, _) => 113,
+        }
+    }
+
+    pub fn param_opcode(&self) -> Vec<u8> {
+        match self {
+            Instruction::Pass => [].to_vec(),
+            // Memory (Local)
+            Instruction::Read(_, p1, p2) => [1, p1.opcode(), p2.opcode()].to_vec(),
+            Instruction::Write(_, p1, p2) => [1, p1.opcode(), p2.opcode()].to_vec(),
+            Instruction::Check(_, p1, p2) => [1, p1.opcode(), p2.opcode()].to_vec(),
+            Instruction::Alloc(_, p1) => [1, p1.opcode()].to_vec(),
+            Instruction::Realloc(_, p1) => [1, p1.opcode()].to_vec(),
+            Instruction::Free(p1) => [p1.opcode()].to_vec(),
+            Instruction::Vlen(_, p1) => [1, p1.opcode()].to_vec(),
+            Instruction::ReadW(_, p1, p2) => [1, p1.opcode(), p2.opcode()].to_vec(), // Placeholder, as the actual parameter opcodes would depend on the parameters
+            Instruction::WriteW(_, p1, p2) => [1, p1.opcode(), p2.opcode()].to_vec(),
+
+            // Memory (Global Persistent)
+            Instruction::Palloc(_, p1) => [1, p1.opcode()].to_vec(),
+            Instruction::Prealloc(_, p1) => [1, p1.opcode()].to_vec(),
+            Instruction::Pfree(p1) => [p1.opcode()].to_vec(),
+            Instruction::Pcheck(_, p1, p2) => [1, p1.opcode(), p2.opcode()].to_vec(),
+            Instruction::Pread(_, p1, p2) => [1, p1.opcode(), p2.opcode()].to_vec(),
+            Instruction::Pwrite(_, p1, p2) => [1, p1.opcode(), p2.opcode()].to_vec(),
+            Instruction::PreadW(_, p1, p2) => [1, p1.opcode(), p2.opcode()].to_vec(),
+            Instruction::PwriteW(_, p1, p2) => [1, p1.opcode(), p2.opcode()].to_vec(),
+            Instruction::Pvlen(_, p1) => [1, p1.opcode()].to_vec(),
+            Instruction::Powner(_, p1) => [1, p1.opcode()].to_vec(),
+
+            // Integer Math
+            Instruction::Add(_, p) => [1,p.opcode()].to_vec(),
+            Instruction::Sub(_, p) => [1,p.opcode()].to_vec(),
+            Instruction::Mult(_, p) => [1,p.opcode()].to_vec(),
+            Instruction::Div(_, p) => [1,p.opcode()].to_vec(),
+            Instruction::Mod(_, p) => [1,p.opcode()].to_vec(),
+            Instruction::Lshift(_, p) => [1,p.opcode()].to_vec(),
+            Instruction::Rshift(_, p) => [1,p.opcode()].to_vec(),
+            Instruction::Sqrt(_, p) => [1,p.opcode()].to_vec(),
+
+            // Float Math
+            Instruction::Fadd(_, p) => [1,p.opcode()].to_vec(),
+            Instruction::Fsub(_, p) => [1,p.opcode()].to_vec(),
+            Instruction::Fmult(_, p) => [1,p.opcode()].to_vec(),
+            Instruction::Fdiv(_, p) => [1,p.opcode()].to_vec(),
+            Instruction::Fmod(_, p) => [1,p.opcode()].to_vec(),
+            Instruction::Fsqrt(_, p) => [1,p.opcode()].to_vec(),
+            Instruction::Finv(_, p) => [1,p.opcode()].to_vec(),
+
+            // Logic & Comparison (Int)
+            Instruction::Eq(_, p1, p2) => [1,p1.opcode(),p2.opcode()].to_vec(),
+            Instruction::Neq(_, p1, p2) => [1,p1.opcode(),p2.opcode()].to_vec(),
+            Instruction::Lt(_, p1, p2) => [1,p1.opcode(),p2.opcode()].to_vec(),
+            Instruction::Gt(_, p1, p2) => [1,p1.opcode(),p2.opcode()].to_vec(),
+            Instruction::Lte(_, p1, p2) => [1,p1.opcode(),p2.opcode()].to_vec(),
+            Instruction::Gte(_, p1, p2) => [1,p1.opcode(),p2.opcode()].to_vec(),
+            Instruction::And(_, p1, p2) => [1,p1.opcode(),p2.opcode()].to_vec(),
+            Instruction::Or(_, p1, p2) => [1,p1.opcode(),p2.opcode()].to_vec(),
+            Instruction::Xor(_, p1, p2) => [1,p1.opcode(),p2.opcode()].to_vec(),
+            Instruction::Not(_, p) => [1,p.opcode()].to_vec(),
+
+            // Logic & Comparison (Float)
+            Instruction::Feq(_, p1, p2) => [1,p1.opcode(),p2.opcode()].to_vec(),
+            Instruction::Fneq(_, p1, p2) => [1,p1.opcode(),p2.opcode()].to_vec(),
+            Instruction::Flt(_, p1, p2) => [1,p1.opcode(),p2.opcode()].to_vec(),
+            Instruction::Fgt(_, p1, p2) => [1,p1.opcode(),p2.opcode()].to_vec(),
+            Instruction::Flte(_, p1, p2) => [1,p1.opcode(),p2.opcode()].to_vec(),
+            Instruction::Fgte(_, p1, p2) => [1,p1.opcode(),p2.opcode()].to_vec(),
+
+            // Control Flow
+            Instruction::Jmp(_) => [8].to_vec(),
+            Instruction::Jif(_, _) => [1, 8].to_vec(),
+            Instruction::Jnif(_, _) => [1, 8].to_vec(),
+            Instruction::Call(_) => [8].to_vec(),
+            Instruction::Ret => [].to_vec(),
+            Instruction::Ecall(_, _) => [8, 8].to_vec(),
+            Instruction::Push(p) => [p.opcode()].to_vec(),
+            Instruction::Pop(_) => [1].to_vec(),
+
+            // Data & System
+            Instruction::Mov(_, p) => [1,p.opcode()].to_vec(),
+            Instruction::Itof(_, _) => [1,1].to_vec(),
+            Instruction::Ftoi(_, _) => [1,1].to_vec(),
+            Instruction::SyscallH(_, p1, p2) => [8,p1.opcode(), p2.opcode()].to_vec(), // Placeholder, as the actual parameter opcodes would depend on the parameters
+            Instruction::Syscall1(_, p1, p2) => [8,p1.opcode(), p2.opcode()].to_vec(),
+            Instruction::Import(_, _) => [1,8].to_vec(),
+
+            Instruction::Halt => [].to_vec(),
+            Instruction::Panic(_, p) => [8,p.opcode()].to_vec(),
+            Instruction::Assert(_, _, p) => [1, 8,p.opcode()].to_vec(),
+        }
+    }
+
 }
 
 pub struct PVramEntry {
@@ -164,7 +357,12 @@ impl VM {
             state: vm_state::VMState::Running,
         })
     }
-    pub fn run(&mut self, instr: &Vec<Instruction>,label_indexs: &HashMap<u64, usize>, start: usize) -> Result<u64, RuntimeError> {
+    pub fn run(
+        &mut self,
+        instr: &Vec<Instruction>,
+        label_indexs: &HashMap<u64, usize>,
+        start: usize
+    ) -> Result<u64, RuntimeError> {
         self.pc = start;
         let len = instr.len();
 
@@ -185,7 +383,11 @@ impl VM {
 
         return Ok(0);
     }
-    pub fn execute(&mut self, instr: &Vec<Instruction>, label_indexs: &HashMap<u64, usize>) -> Result<u64, RuntimeError> {
+    pub fn execute(
+        &mut self,
+        instr: &Vec<Instruction>,
+        label_indexs: &HashMap<u64, usize>
+    ) -> Result<u64, RuntimeError> {
         let work = &instr[self.pc as usize];
         self.pc += 1;
         match work {
@@ -304,7 +506,10 @@ impl VM {
                         }
                     }
 
-                    self.state = VMState::Panicked(*code, format!("Assertion failed at reg {}: {}", *reg, m_text));
+                    self.state = VMState::Panicked(
+                        *code,
+                        format!("Assertion failed at reg {}: {}", *reg, m_text)
+                    );
                 }
                 Ok(0)
             }

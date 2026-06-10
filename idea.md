@@ -36,6 +36,7 @@ When writing scripts in a text file for the VM to parse or convert to binary, th
 *   **Pre-processor Statements:** Lines starting with `:` are used for static data allocation:
     *   `:string <name> "<content>"`: Allocates the string in ViRam at a handle equal to `hash(name)`.
     *   `:buff <name> <val1> <val2> ...`: Allocates a raw buffer in ViRam at a handle equal to `hash(name)` containing the specified values.
+    * `:label <name in string>`: maps hash(name) to the line number in the line index map and replaces line with `pass`
 
 ---
 
@@ -86,6 +87,7 @@ When writing scripts in a text file for the VM to parse or convert to binary, th
 ### Data & System
 *   **Conversion:** `itof dest src` (Int to Float), `ftoi dest src` (Float to Int), `mov dest src` (Raw copy).
 *   **Inter-op:** `syscallh hash handle dest`, `syscall1 hash arg dest`.
+*   **Importing syscalls:** `import <rx> <u64 hash>`
 
 ---
 

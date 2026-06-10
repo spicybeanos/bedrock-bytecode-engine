@@ -13,8 +13,6 @@
 :buff nl 10
 
 mov r1 .hello
-syscallh 0x939583C88643DA33 .hello .io_buf
-syscallh 0x939583C88643DA33 .nl .io_buf
 
 alloc r10 16
 mov r11 0x1122334455667788
@@ -109,29 +107,11 @@ mov r71 999
 mov r76 77
 ret
 
-syscall1 0x5F1C2A5DD8A72C34 .num_u64 .num_buf
 readw r77 .num_buf 0
-syscallh 0x7118981E0DB56297 .num_buf .out_u64
-syscallh 0x939583C88643DA33 .out_u64 .io_buf
-syscallh 0x939583C88643DA33 .nl .io_buf
 
-syscall1 0xDF1A83BF8FBBBA68 .num_i64 .num_buf
 readw r78 .num_buf 0
-syscallh 0xD6922AD279C2F043 .num_buf .out_i64
-syscallh 0x939583C88643DA33 .out_i64 .io_buf
-syscallh 0x939583C88643DA33 .nl .io_buf
 
-syscall1 0x60D7394919E29C45 .num_f64 .num_buf
 readw r79 .num_buf 0
-syscallh 0x05CB2D0209CD628A .num_buf .out_f64
-syscallh 0x939583C88643DA33 .out_f64 .io_buf
-syscallh 0x939583C88643DA33 .nl .io_buf
 
-syscallh 0x31AA20F5AF2D74BF .stable_path .num_buf
 readw r80 .num_buf 0
-syscallh 0xB47329EB57B9802F .stable_path .num_buf
 readw r81 .num_buf 0
-syscallh 0x5072E3C89F8F6402 .path .hello_bytes
-syscallh 0x54351F5BB08D5BF7 .path .hello_bytes
-syscallh 0x38E75B427198D6E3 .path .io_buf
-syscallh 0x939583C88643DA33 .io_buf .nl

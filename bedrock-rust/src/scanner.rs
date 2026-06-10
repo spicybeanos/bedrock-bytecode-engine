@@ -1,4 +1,5 @@
 use crate::error::BuildError;
+use crate::memory;
 use crate::utils::hash_string_vm;
 use crate::vm::{ GlobalState, InstrParam, Instruction, VM };
 use std::cell::RefCell;
@@ -117,6 +118,31 @@ pub fn construct_from_text(
     let label_indexs = apply_preprocess_cmds(&mut vm, &pre_proccess_cmds)?;
 
     return Ok((vm, instructions, label_indexs));
+}
+
+fn preprocess_lines(
+    text: &Vec<char>
+) -> Result<(Vec<char>, HashMap<u64, usize>, HashMap<u64, Vec<u8>>), BuildError> {
+    let mut processed_text = Vec::<char>::new();
+    let mut line_index = HashMap::<u64, usize>::new();
+    let mut memory_inits = HashMap::<u64, Vec<u8>>::new();
+
+    let mut index = 0;
+    let mut line_number = 1usize;
+    let len = text.len();
+
+    while index < len {
+        match *text.get(index).ok_or(BuildError::FileSizeLT0.at_line(line_number))? {
+            ':' => {
+                let mut cmd_name_end = index + 1;
+                while *text.get(cmd_name_end).ok_or(BuildError::FileSizeLT0.at_line(line_number))? != ' ' && *text.get(cmd_name_end).ok_or(BuildError::FileSizeLT0.at_line(line_number))? != '\t' && *text.get(cmd_name_end).ok_or(BuildError::FileSizeLT0.at_line(line_number))? != '\n' && *text.get(cmd_name_end).ok_or(BuildError::FileSizeLT0.at_line(line_number))? != '\r' {
+                    cmd_name_end += 1;
+                }
+            }
+        }
+    }
+
+    return Ok((processed_text, line_index, memory_inits));
 }
 
 fn push_current_token(
@@ -1041,6 +1067,18 @@ fn instruction_from_string(str: &Vec<String>) -> Result<Instruction, BuildError>
                     )?,
                     resolve_param(
                         str.get(3).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?
+                )
+            ),
+
+        "import" =>
+            Ok(
+                Instruction::Import(
+                    resolve_param_reg(
+                        str.get(1).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
+                    )?,
+                    resolve_param_u64_or_hash(
+                        str.get(2).ok_or(BuildError::InvalidOrMissingParameter)?.as_str()
                     )?
                 )
             ),

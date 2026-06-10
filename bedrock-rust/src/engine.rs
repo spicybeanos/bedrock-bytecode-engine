@@ -25,3 +25,11 @@ impl Engine {
         }
     }
 }
+impl Scheduler {
+    pub fn new() -> Self {
+        Scheduler {
+            ready_queue: VecDeque::new(),
+            instruction_budget: 1000,
+        }
+    }
+}

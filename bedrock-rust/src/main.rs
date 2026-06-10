@@ -12,6 +12,7 @@ mod engine;
 mod syscall;
 mod test;
 mod source;
+mod assembler;
 mod vm_state;
 
 fn dump_first_10_registers(vm: &vm::VM) {
@@ -98,7 +99,7 @@ fn runtime_error_name(err: &error::RuntimeError) -> String {
         error::RuntimeError::EmptyStack => "Empty stack".to_owned(),
         error::RuntimeError::CallStackOverflow => "call stack overflow".to_owned(),
         error::RuntimeError::StackOverflow => "stack overflow".to_owned(),
-        error::RuntimeError::Panic(code,msg ) => format!("panicked <{}>: {}", code, msg),
+        error::RuntimeError::Panic(code, msg) => format!("panicked <{}>: {}", code, msg),
     }
 }
 
@@ -151,4 +152,12 @@ fn main() {
     dump_first_10_registers(&vm);
     dump_vi_ram(&vm);
     dump_p_vram(&vm);
+    println!("-------------labels:");
+    for (hash, loc) in label_indexs.iter() {
+        println!("label hash {} at instruction index {}", hash, loc);
+    }
+    println!("-------------instructions:");
+    for (i, instr) in instructions.iter().enumerate() {
+        println!("instruction {}: {:?}", i, instr);
+    }
 }
