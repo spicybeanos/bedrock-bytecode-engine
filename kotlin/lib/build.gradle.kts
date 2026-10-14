@@ -45,3 +45,5 @@ tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
 }
+group = "com.spicybeanos"
+version = "1.0.0"
