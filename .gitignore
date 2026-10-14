@@ -2,3 +2,5 @@
 /csharp/bin
 /csharp/obj
 *.tmp
+/kotlin/build
+/kotlin/.gradle
