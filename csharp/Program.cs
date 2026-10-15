@@ -167,6 +167,10 @@ namespace BedrockBytecodeEngine
                 "u64.to_string",
                 "i64.to_string",
                 "f64.to_string",
+                "netty.http.fetch.get",
+                "netty.http.fetch.post",
+                "netty.http.fetch.delete",
+                "netty.http.fetch.patch",
                 "native.crypto",
                 "native.crypto.hash.sha1",
                 "native.crypto.hash.sha256",
@@ -182,13 +186,17 @@ namespace BedrockBytecodeEngine
 
             Console.WriteLine("hashes");
             string fcont = "string,hash,hash_16\n";
+            string kotlinMap = "";
             foreach (string f in fxns)
             {
                 ulong h = Utils.HashStringVm(f);
                 Console.WriteLine($"{f} \t->\t {h} \t({h:X})");
                 fcont += $"{f},{h},{h:X}\n";
+                kotlinMap += $"\"{f}\" to {h}uL,\n";
             }
             File.WriteAllText("string hash result.csv",fcont);
+            File.WriteAllText("string hash kotlin map.txt",kotlinMap);
+
         }
 
         static void RunMemoryTest()

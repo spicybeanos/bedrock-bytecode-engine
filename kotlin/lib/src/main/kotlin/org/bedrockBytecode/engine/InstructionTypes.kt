@@ -1,11 +1,98 @@
 package org.bedrockBytecode.engine
 
-internal enum InstrParamType{
+public enum class InstrParamType{
     Register,
     Value
 }
 
-internal class InstrParam (val Type : InstrParamType , var  RegisterId:UByte,var  Value:ULong){
+public enum class InstructionNumbers{
+    Pass,
+    // Memory (Local)
+    Read,
+    Write,
+    Check,
+    Alloc,
+    Realloc,
+    Free,
+    Vlen,
+    ReadW,
+    WriteW,
+
+    // Memory (Global Persistent)
+    Palloc,
+    Prealloc,
+    Pfree,
+    Pcheck,
+    Pread,
+    Pwrite,
+    PreadW,
+    PwriteW,
+    Pvlen,
+    Powner,
+
+    // Integer Math
+    Add,
+    Sub,
+    Mult,
+    Div,
+    Mod,
+    Lshift,
+    Rshift,
+    Sqrt,
+
+    // Float Math
+    Fadd,
+    Fsub,
+    Fmult,
+    Fdiv,
+    Fmod,
+    Fsqrt,
+    Finv,
+
+    // Logic & Comparison (Int)
+    Eq,
+    Neq,
+    Lt,
+    Gt,
+    Lte,
+    Gte,
+    And,
+    Or,
+    Xor,
+    Not,
+
+    // Logic & Comparison (Float)
+    Feq,
+    Fneq,
+    Flt,
+    Fgt,
+    Flte,
+    Fgte,
+
+    // Control Flow
+    Jmp,
+    Jif,
+    Jnif,
+    Call,
+    Ret,
+    Ecall,
+    Push,
+    Pop,
+
+    // Data & System
+    Mov,
+    Itof,
+    Ftoi,
+    SyscallH,
+    Syscall1,
+    Import,
+
+    Halt,
+    Panic,
+    Assert,
+}
+
+internal class InstrParam (public val Type : InstrParamType ,public var  RegisterId:UByte,public var  Value:ULong){
        
 
     public fun  Reg( regId:UByte) : InstrParam 
@@ -19,6 +106,6 @@ internal class InstrParam (val Type : InstrParamType , var  RegisterId:UByte,var
         }
 }
 
-public abstract class Instruction { }
+public interface Instruction { public fun getInstructionNumber():Int }
 
 
