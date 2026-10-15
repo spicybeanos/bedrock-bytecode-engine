@@ -166,15 +166,29 @@ namespace BedrockBytecodeEngine
                 "f64.from_string",
                 "u64.to_string",
                 "i64.to_string",
-                "f64.to_string"
+                "f64.to_string",
+                "native.crypto",
+                "native.crypto.hash.sha1",
+                "native.crypto.hash.sha256",
+                "native.crypto.aes",
+                "native.crypto.aes.decrypt",
+                "native.crypto.aes.encrypt",
+                "native.crypto.rsa",
+                "native.crypto.rsa.keygen",
+                "native.crypto.rsa.encrypt",
+                "native.crypto.rsa.decrypt",
+                
             };
 
             Console.WriteLine("hashes");
+            string fcont = "string,hash,hash_16\n";
             foreach (string f in fxns)
             {
                 ulong h = Utils.HashStringVm(f);
                 Console.WriteLine($"{f} \t->\t {h} \t({h:X})");
+                fcont += $"{f},{h},{h:X}\n";
             }
+            File.WriteAllText("string hash result.csv",fcont);
         }
 
         static void RunMemoryTest()
